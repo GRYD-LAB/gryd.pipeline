@@ -530,4 +530,4 @@ When extending the framework, follow these principles:
 
 ## License
 
-[Your License Here]
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

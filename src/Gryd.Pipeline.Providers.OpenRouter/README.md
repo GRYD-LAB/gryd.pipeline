@@ -213,4 +213,4 @@ See [OpenRouter documentation](https://openrouter.ai/docs) for the full list.
 
 ## License
 
-Same as Gryd.Pipeline.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](../../../LICENSE) file for details.

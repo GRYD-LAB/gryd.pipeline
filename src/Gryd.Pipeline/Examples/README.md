@@ -49,3 +49,8 @@ To use them:
 3. **Testability First**: Steps can be tested in isolation with fake providers
 4. **Observable Execution**: Every step execution is recorded for debugging
 5. **Linear Flow**: No branching - use composition and stop conditions instead
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](../../../LICENSE) file for details.
+
