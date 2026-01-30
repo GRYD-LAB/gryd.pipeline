@@ -28,6 +28,17 @@ This library has **no knowledge of any domain**. It does not model:
 
 Any domain-specific meaning is introduced exclusively by user-defined steps and the data they exchange through the shared context.
 
+## Examples
+
+Comprehensive, compilable examples are available in the [src/Gryd.Pipeline/Examples](src/Gryd.Pipeline/Examples) directory:
+
+- **[BasicPipelineExamples.cs](src/Gryd.Pipeline/Examples/BasicPipelineExamples.cs)** - Core concepts, transformations, observability, and composition
+- **[ExternalCallExamples.cs](src/Gryd.Pipeline/Examples/ExternalCallExamples.cs)** - External API integration and chained calls
+- **[LlmStepExamples.cs](src/Gryd.Pipeline/Examples/LlmStepExamples.cs)** - LLM integration, prompt templating, and RAG pipelines
+- **[CustomStepExamples.cs](src/Gryd.Pipeline/Examples/CustomStepExamples.cs)** - Custom step implementations (validation, retry, logging)
+
+These examples are written in C# and compile with the project, ensuring they stay up-to-date with API changes.
+
 ## Core Abstractions
 
 ### Pipeline
@@ -284,6 +295,12 @@ var pipeline = new PipelineBuilder()
     .With(storeStep)
     .Build();
 ```
+
+**For more examples**, see the [Examples directory](src/Gryd.Pipeline/Examples) which includes:
+- External API integration patterns
+- RAG-style pipelines with document retrieval
+- Custom step implementations (retry, validation, logging)
+- Multi-step LLM pipelines
 
 ## What This Library Does NOT Do
 
