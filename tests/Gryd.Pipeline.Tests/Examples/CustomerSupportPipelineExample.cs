@@ -1,0 +1,194 @@
+namespace Gryd.Pipeline.Tests.Examples;
+
+using Steps;
+using Fakes;
+
+/// <summary>
+/// Complete example: Customer Support Assistant Pipeline
+/// This example shows a realistic pipeline that:
+/// 1. Validates user input
+/// 2. Fetches customer data from external system
+/// 3. Uses LLM to generate a personalized response
+/// 4. Logs the interaction
+/// </summary>
+public class CustomerSupportPipelineExample
+{
+  [Fact]
+  public async Task Complete_Customer_Support_Pipeline_Example()
+  {
+    // ============================================================
+    // STEP 1: Validate Input
+    // ============================================================
+    var validateStep = new TransformStep(
+      "ValidateInput",
+      ctx =>
+      {
+        var query = ctx.Get<string>("customer_query");
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+          ctx.Set("validation_error", "Query cannot be empty");
+          return Task.CompletedTask;
+        }
+
+        ctx.Set("validation_passed", true);
+        return Task.CompletedTask;
+      });
+
+    // ============================================================
+    // STEP 2: Fetch Customer Data (External Call)
+    // ============================================================
+    var fetchCustomerStep = new ExternalCallStep<CustomerData>(
+      "FetchCustomerData",
+      call: async ctx =>
+      {
+        var customerId = ctx.Get<string>("customer_id");
+
+        // Simulate external API call
+        await Task.Delay(10);
+
+        return new CustomerData
+        {
+          Id = customerId,
+          Name = "John Doe",
+          Tier = "Premium",
+          PurchaseHistory = new[] { "Widget A", "Widget B" }
+        };
+      },
+      saveResult: (ctx, data) =>
+      {
+        ctx.Set("customer", data);
+        ctx.Set("customer_name", data.Name);
+        ctx.Set("customer_tier", data.Tier);
+      });
+
+    // ============================================================
+    // STEP 3: Generate LLM Response
+    // ============================================================
+    var provider = new FakeLlmProvider(prompt =>
+    {
+      // Simulate LLM understanding the context
+      if (prompt.Contains("Premium"))
+        return "Thank you for being a valued Premium customer! We appreciate your loyalty.";
+      else
+        return "Thank you for your inquiry. How may we assist you today?";
+    });
+
+    var llmStep = new LlmStep<string>(
+      name: "GenerateResponse",
+      provider: provider,
+      inputMapper: ctx => new Dictionary<string, string>
+      {
+        ["customer_name"] = ctx.Get<string>("customer_name"),
+        ["customer_tier"] = ctx.Get<string>("customer_tier"),
+        ["query"] = ctx.Get<string>("customer_query")
+      },
+      promptTemplate: @"
+Customer: {customer_name} ({customer_tier} tier)
+Query: {query}
+
+Generate a helpful and personalized response:",
+      outputParser: response => response.Trim(),
+      outputKey: "generated_response",
+      model: "gpt-4",
+      temperature: 0.7);
+
+    // ============================================================
+    // STEP 4: Log Interaction
+    // ============================================================
+    var logStep = new TransformStep(
+      "LogInteraction",
+      ctx =>
+      {
+        var log = new InteractionLog
+        {
+          CustomerId = ctx.Get<string>("customer_id"),
+          Query = ctx.Get<string>("customer_query"),
+          Response = ctx.Get<string>("generated_response"),
+          Timestamp = DateTime.UtcNow
+        };
+
+        ctx.Set("interaction_logged", true);
+        ctx.Set("log", log);
+
+        return Task.CompletedTask;
+      });
+
+    // ============================================================
+    // BUILD AND EXECUTE PIPELINE
+    // ============================================================
+    var runner = new PipelineRunner();
+
+    // Setup: Add initial input step
+    var setupStep = new TransformStep("SetupInput", ctx =>
+    {
+      ctx.Set("customer_id", "CUST-123");
+      ctx.Set("customer_query", "How do I return a product?");
+      return Task.CompletedTask;
+    });
+
+    // Build complete pipeline with setup step
+    var pipeline = new PipelineBuilder()
+      .With(setupStep)
+      .With(validateStep)
+      .With(fetchCustomerStep)
+      .With(llmStep)
+      .With(logStep)
+      .Build();
+
+    // Execute
+    var context = await runner.RunAsync(pipeline);
+
+    // ============================================================
+    // VERIFY RESULTS
+    // ============================================================
+
+    // All steps executed successfully (5 steps including setup)
+    Assert.Equal(5, context.Executions.Count);
+    Assert.All(context.Executions, e => Assert.True(e.Success));
+
+    // Validation passed
+    Assert.True(context.Get<bool>("validation_passed"));
+
+    // Customer data fetched
+    var customer = context.Get<CustomerData>("customer");
+    Assert.Equal("John Doe", customer.Name);
+    Assert.Equal("Premium", customer.Tier);
+
+    // LLM response generated
+    var response = context.Get<string>("generated_response");
+    Assert.Contains("Premium customer", response);
+
+    // Interaction logged
+    Assert.True(context.Get<bool>("interaction_logged"));
+    var log = context.Get<InteractionLog>("log");
+    Assert.Equal("CUST-123", log.CustomerId);
+
+    // ============================================================
+    // OBSERVABILITY: Inspect execution timeline
+    // ============================================================
+    foreach (var execution in context.Executions)
+    {
+      var duration = execution.FinishedAt - execution.StartedAt;
+      System.Diagnostics.Debug.WriteLine(
+        $"Step: {execution.StepName}, Duration: {duration.TotalMilliseconds}ms");
+    }
+  }
+
+  // Supporting types for the example
+  public class CustomerData
+  {
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string Tier { get; init; }
+    public required string[] PurchaseHistory { get; init; }
+  }
+
+  public class InteractionLog
+  {
+    public required string CustomerId { get; init; }
+    public required string Query { get; init; }
+    public required string Response { get; init; }
+    public DateTime Timestamp { get; init; }
+  }
+}
