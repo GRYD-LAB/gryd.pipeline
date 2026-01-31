@@ -1,6 +1,7 @@
 namespace Gryd.Pipeline.Examples;
 
 using Steps;
+using Fakes;
 
 /// <summary>
 /// Examples demonstrating custom step implementations.
@@ -14,11 +15,7 @@ public static class CustomStepExamples
   {
     var pipeline = new PipelineBuilder()
       .With(new ValidationStep())
-      .With(new TransformStep("Process", ctx =>
-      {
-        Console.WriteLine("Processing valid data...");
-        return Task.CompletedTask;
-      }))
+      .With(new SimpleTransformStep("Process", ctx => { Console.WriteLine("Processing valid data..."); }))
       .Build();
 
     var runner = new PipelineRunner();
@@ -36,7 +33,7 @@ public static class CustomStepExamples
   /// </summary>
   public static async Task CustomRetryStepExample()
   {
-    var unreliableStep = new TransformStep("UnreliableOperation", ctx =>
+    var unreliableStep = new SimpleTransformStep("UnreliableOperation", ctx =>
     {
       ctx.TryGet("attempts", out int attempts);
       ctx.Set("attempts", attempts + 1);
@@ -47,7 +44,6 @@ public static class CustomStepExamples
       }
 
       ctx.Set("result", "Success!");
-      return Task.CompletedTask;
     });
 
     var retryStep = new RetryStep(unreliableStep, maxRetries: 3);
@@ -72,11 +68,7 @@ public static class CustomStepExamples
   {
     var pipeline = new PipelineBuilder()
       .With(new LoggingStep("Step1"))
-      .With(new TransformStep("Process", ctx =>
-      {
-        ctx.Set("data", "processed");
-        return Task.CompletedTask;
-      }))
+      .With(new SimpleTransformStep("Process", ctx => { ctx.Set("data", "processed"); }))
       .With(new LoggingStep("Step2"))
       .Build();
 
@@ -91,11 +83,8 @@ public static class CustomStepExamples
   {
     var conditionalStep = new ConditionalExecutionStep(
       condition: ctx => ctx.Get<bool>("should_process"),
-      stepToExecute: new TransformStep("ConditionalWork", ctx =>
-      {
-        Console.WriteLine("Condition was true, executing work...");
-        return Task.CompletedTask;
-      }));
+      stepToExecute: new SimpleTransformStep("ConditionalWork",
+        ctx => { Console.WriteLine("Condition was true, executing work..."); }));
 
     var pipeline = new PipelineBuilder()
       .With(conditionalStep)

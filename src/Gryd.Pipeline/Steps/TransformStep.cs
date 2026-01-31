@@ -1,60 +1,31 @@
 namespace Gryd.Pipeline.Steps;
 
 /// <summary>
-/// Pipeline step that performs in-memory transformations
+/// Abstract base class for pipeline steps that perform in-memory transformations
 /// over data stored in the execution context.
 /// </summary>
-public sealed class TransformStep : IPipelineStep
+public abstract class TransformStep : IPipelineStep
 {
   /// <summary>
   /// Logical name of the step, used for observability and debugging.
   /// </summary>
-  public string Name { get; }
+  public abstract string Name { get; }
 
   /// <summary>
-  /// Handler that performs transformations and enriches the context.
+  /// Executes the step asynchronously.
   /// </summary>
-  public Func<ExecutionPipelineContext, Task> Handler { get; }
-
-  /// <summary>
-  /// Predicate to determine if this step should execute.
-  /// If false, the step returns StepResult.Continue() without doing work.
-  /// </summary>
-  public Func<ExecutionPipelineContext, bool> ExecutionCondition { get; }
-
-  /// <summary>
-  /// Function to determine the flow control decision after execution.
-  /// Receives the context and returns whether to continue (true) or stop (false).
-  /// </summary>
-  public Func<ExecutionPipelineContext, bool> ContinuationCondition { get; }
-
-  public TransformStep(
-    string name,
-    Func<ExecutionPipelineContext, Task> handler,
-    Func<ExecutionPipelineContext, bool>? executionCondition = null,
-    Func<ExecutionPipelineContext, bool>? continuationCondition = null)
-  {
-    Name = name;
-    Handler = handler;
-    ExecutionCondition = executionCondition ?? (_ => true);
-    ContinuationCondition = continuationCondition ?? (_ => true);
-  }
-
-  public async Task<StepResult> ExecuteAsync(
+  public Task<StepResult> ExecuteAsync(
     ExecutionPipelineContext context,
-    CancellationToken ct
-  )
+    CancellationToken ct)
   {
-    // The step decides whether to perform work
-    if (ExecutionCondition(context))
-    {
-      // Perform the transformation
-      await Handler(context);
-    }
-
-    // Decide whether pipeline should continue (independent of execution)
-    return ContinuationCondition(context)
-      ? StepResult.Continue()
-      : StepResult.Stop();
+    Execute(context);
+    return Task.FromResult(StepResult.Continue());
   }
+
+  /// <summary>
+  /// Performs the transformation on the execution context.
+  /// Override this method to implement your transformation logic.
+  /// </summary>
+  /// <param name="context">The execution context containing shared data.</param>
+  protected abstract void Execute(ExecutionPipelineContext context);
 }

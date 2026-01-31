@@ -21,7 +21,7 @@ public class CustomerSupportPipelineExample
     // ============================================================
     // STEP 1: Validate Input
     // ============================================================
-    var validateStep = new TransformStep(
+    var validateStep = new SimpleTransformStep(
       "ValidateInput",
       ctx =>
       {
@@ -30,11 +30,10 @@ public class CustomerSupportPipelineExample
         if (string.IsNullOrWhiteSpace(query))
         {
           ctx.Set("validation_error", "Query cannot be empty");
-          return Task.CompletedTask;
+          return;
         }
 
         ctx.Set("validation_passed", true);
-        return Task.CompletedTask;
       });
 
     // ============================================================
@@ -84,7 +83,7 @@ public class CustomerSupportPipelineExample
     // ============================================================
     // STEP 4: Log Interaction
     // ============================================================
-    var logStep = new TransformStep(
+    var logStep = new SimpleTransformStep(
       "LogInteraction",
       ctx =>
       {
@@ -98,8 +97,6 @@ public class CustomerSupportPipelineExample
 
         ctx.Set("interaction_logged", true);
         ctx.Set("log", log);
-
-        return Task.CompletedTask;
       });
 
     // ============================================================
@@ -108,11 +105,10 @@ public class CustomerSupportPipelineExample
     var runner = new PipelineRunner();
 
     // Setup: Add initial input step
-    var setupStep = new TransformStep("SetupInput", ctx =>
+    var setupStep = new SimpleTransformStep("SetupInput", ctx =>
     {
       ctx.Set("customer_id", "CUST-123");
       ctx.Set("customer_query", "How do I return a product?");
-      return Task.CompletedTask;
     });
 
     // Build complete pipeline with setup step

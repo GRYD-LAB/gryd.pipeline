@@ -2,6 +2,7 @@ namespace Gryd.Pipeline.Examples;
 
 using Llm;
 using Steps;
+using Fakes;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
 
@@ -54,11 +55,10 @@ public static class LlmStepExamples
     var provider = new FakeLlmProvider(prompt =>
       prompt.Contains("classify") ? "technical_question" : "Here is the answer");
 
-    var prepareStep = new TransformStep("PrepareInput", ctx =>
+    var prepareStep = new SimpleTransformStep("PrepareInput", ctx =>
     {
       var rawQuery = ctx.Get<string>("raw_query");
       ctx.Set("cleaned_query", rawQuery.Trim());
-      return Task.CompletedTask;
     });
 
     var classifyStep = new ClassifyIntentStep(
@@ -140,12 +140,11 @@ public static class LlmStepExamples
       },
       saveResult: (ctx, docs) => ctx.Set("retrieved_docs", docs));
 
-    var formatContextStep = new TransformStep("FormatContext", ctx =>
+    var formatContextStep = new SimpleTransformStep("FormatContext", ctx =>
     {
       var docs = ctx.Get<List<string>>("retrieved_docs");
       var context = string.Join("\n", docs);
       ctx.Set("document_context", context);
-      return Task.CompletedTask;
     });
 
     var generateStep = new GenerateAnswerStep(

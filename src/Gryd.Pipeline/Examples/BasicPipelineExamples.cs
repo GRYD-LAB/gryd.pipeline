@@ -1,6 +1,7 @@
 namespace Gryd.Pipeline.Examples;
 
 using Steps;
+using Fakes;
 
 /// <summary>
 /// Basic pipeline examples demonstrating core concepts.
@@ -13,22 +14,17 @@ public static class BasicPipelineExamples
   public static async Task SimpleTransformPipeline()
   {
     // 1. Create steps
-    var step1 = new TransformStep(
+    var step1 = new SimpleTransformStep(
       "EnrichContext",
-      ctx =>
-      {
-        ctx.Set("user_input", "Hello, world!");
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("user_input", "Hello, world!"); });
 
-    var step2 = new TransformStep(
+    var step2 = new SimpleTransformStep(
       "ProcessData",
       ctx =>
       {
         var input = ctx.Get<string>("user_input");
         var result = input.ToUpper();
         ctx.Set("processed", result);
-        return Task.CompletedTask;
       });
 
     // 2. Build the pipeline
@@ -51,28 +47,14 @@ public static class BasicPipelineExamples
   /// </summary>
   public static async Task ConditionalStopExample()
   {
-    var validateStep = new TransformStep(
-      "ValidateInput",
-      ctx =>
-      {
-        var value = ctx.Get<int>("input_value");
+    var validateStep = new ValidateInputStep();
 
-        if (value < 0)
-        {
-          ctx.Set("error", "Negative values not allowed");
-          return Task.FromResult(StepResult.Stop());
-        }
-
-        return Task.FromResult(StepResult.Continue());
-      });
-
-    var processStep = new TransformStep(
+    var processStep = new SimpleTransformStep(
       "ProcessValue",
       ctx =>
       {
         var value = ctx.Get<int>("input_value");
         ctx.Set("result", value * 2);
-        return Task.CompletedTask;
       });
 
     var pipeline = new PipelineBuilder()
@@ -95,17 +77,12 @@ public static class BasicPipelineExamples
   /// </summary>
   public static async Task ObservabilityExample()
   {
-    var step1 = new TransformStep("Step1", ctx =>
-    {
-      ctx.Set("data", "test");
-      return Task.CompletedTask;
-    });
+    var step1 = new SimpleTransformStep("Step1", ctx => { ctx.Set("data", "test"); });
 
-    var step2 = new TransformStep("Step2", ctx =>
+    var step2 = new SimpleTransformStep("Step2", ctx =>
     {
       var data = ctx.Get<string>("data");
       ctx.Set("processed", data.ToUpper());
-      return Task.CompletedTask;
     });
 
     var pipeline = new PipelineBuilder()
@@ -136,25 +113,22 @@ public static class BasicPipelineExamples
   public static async Task CompositionExample()
   {
     // Create individual steps
-    var validateStep = new TransformStep("Validate", ctx =>
+    var validateStep = new SimpleTransformStep("Validate", ctx =>
     {
       var input = ctx.Get<string>("input");
       ctx.Set("valid", !string.IsNullOrEmpty(input));
-      return Task.CompletedTask;
     });
 
-    var processStep = new TransformStep("Process", ctx =>
+    var processStep = new SimpleTransformStep("Process", ctx =>
     {
       var input = ctx.Get<string>("input");
       ctx.Set("output", input.Trim().ToLower());
-      return Task.CompletedTask;
     });
 
-    var enrichStep = new TransformStep("Enrich", ctx =>
+    var enrichStep = new SimpleTransformStep("Enrich", ctx =>
     {
       var output = ctx.Get<string>("output");
       ctx.Set("final", $"Processed: {output}");
-      return Task.CompletedTask;
     });
 
     // Combine them into a pipeline
@@ -171,5 +145,28 @@ public static class BasicPipelineExamples
     await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     Console.WriteLine(context.Get<string>("final")); // Output: Processed: hello
+  }
+}
+
+/// <summary>
+/// Custom validation step that stops execution on invalid data.
+/// </summary>
+public class ValidateInputStep : IPipelineStep
+{
+  public string Name => "ValidateInput";
+
+  public Task<StepResult> ExecuteAsync(
+    ExecutionPipelineContext context,
+    CancellationToken cancellationToken)
+  {
+    var value = context.Get<int>("input_value");
+
+    if (value < 0)
+    {
+      context.Set("error", "Negative values not allowed");
+      return Task.FromResult(StepResult.Stop());
+    }
+
+    return Task.FromResult(StepResult.Continue());
   }
 }

@@ -65,13 +65,7 @@ public class IntegrationExample
     // ============================================================
     // BUILD PIPELINE WITH LLM STEP
     // ============================================================
-    var setupStep = new TransformStep("Setup", ctx =>
-    {
-      ctx.Set("customer_name", "Alice Johnson");
-      ctx.Set("customer_tier", "Premium");
-      ctx.Set("query", "How do I return a product?");
-      return Task.CompletedTask;
-    });
+    var setupStep = new SetupContextStep();
 
     var llmStep = new OpenRouterResponseStep(
       provider,
@@ -83,12 +77,7 @@ public class IntegrationExample
       }),
       new JsonSerializerOptions());
 
-    var validateStep = new TransformStep("Validate", ctx =>
-    {
-      var response = ctx.Get<string>("llm_response");
-      ctx.Set("response_valid", !string.IsNullOrWhiteSpace(response));
-      return Task.CompletedTask;
-    });
+    var validateStep = new ValidateResponseStep();
 
     // ============================================================
     // EXECUTE PIPELINE
@@ -360,3 +349,38 @@ internal class GenerateResponseOpenRouterStep : Steps.LlmStep<string>
 }
 
 internal record OpenRouterLlmStepOptions : Steps.LlmStepOptions;
+
+/// <summary>
+/// Helper step to set up test context data.
+/// </summary>
+internal class SetupContextStep : IPipelineStep
+{
+  public string Name => "Setup";
+
+  public Task<StepResult> ExecuteAsync(
+    ExecutionPipelineContext context,
+    CancellationToken cancellationToken)
+  {
+    context.Set("customer_name", "Alice Johnson");
+    context.Set("customer_tier", "Premium");
+    context.Set("query", "How do I return a product?");
+    return Task.FromResult(StepResult.Continue());
+  }
+}
+
+/// <summary>
+/// Helper step to validate LLM response.
+/// </summary>
+internal class ValidateResponseStep : IPipelineStep
+{
+  public string Name => "Validate";
+
+  public Task<StepResult> ExecuteAsync(
+    ExecutionPipelineContext context,
+    CancellationToken cancellationToken)
+  {
+    var response = context.Get<string>("llm_response");
+    context.Set("response_valid", !string.IsNullOrWhiteSpace(response));
+    return Task.FromResult(StepResult.Continue());
+  }
+}

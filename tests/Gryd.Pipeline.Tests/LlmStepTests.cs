@@ -1,5 +1,6 @@
 namespace Gryd.Pipeline.Tests;
 
+using Llm;
 using Steps;
 using Fakes;
 using Microsoft.Extensions.Options;
@@ -74,11 +75,7 @@ public class LlmStepTests
     // Arrange
     var provider = new FakeLlmProvider("Paris");
 
-    var setupStep = new TransformStep("Setup", ctx =>
-    {
-      ctx.Set("country", "France");
-      return Task.CompletedTask;
-    });
+    var setupStep = new SimpleTransformStep("Setup", ctx => { ctx.Set("country", "France"); });
 
     var llmStep = new TestLlmStep(
       provider,
@@ -92,11 +89,10 @@ public class LlmStepTests
       outputParser: raw => raw.Trim(),
       outputKey: "capital");
 
-    var verifyStep = new TransformStep("Verify", ctx =>
+    var verifyStep = new SimpleTransformStep("Verify", ctx =>
     {
       var capital = ctx.Get<string>("capital");
       ctx.Set("verified", capital.Length > 0);
-      return Task.CompletedTask;
     });
 
     var pipeline = new PipelineBuilder()

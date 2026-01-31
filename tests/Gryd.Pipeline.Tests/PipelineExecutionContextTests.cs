@@ -1,6 +1,7 @@
 ﻿namespace Gryd.Pipeline.Tests;
 
 using Steps;
+using Fakes;
 
 public class ExecutionPipelineContextTests
 {
@@ -48,13 +49,9 @@ public class TransformStepTests
   public async Task TransformStep_Should_Execute_Handler_And_Enrich_Context()
   {
     // Arrange
-    var step = new TransformStep(
+    var step = new SimpleTransformStep(
       "TestTransform",
-      ctx =>
-      {
-        ctx.Set("result", "transformed");
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("result", "transformed"); });
 
     var context = new ExecutionPipelineContext();
 
@@ -95,8 +92,8 @@ public class PipelineBuilderTests
   public void PipelineBuilder_Should_Build_Pipeline_With_Steps()
   {
     // Arrange
-    var step1 = new TransformStep("Step1", ctx => Task.CompletedTask);
-    var step2 = new TransformStep("Step2", ctx => Task.CompletedTask);
+    var step1 = new SimpleTransformStep("Step1", ctx => { });
+    var step2 = new SimpleTransformStep("Step2", ctx => { });
 
     // Act
     var pipeline = new PipelineBuilder()
@@ -119,18 +116,16 @@ public class PipelineRunnerTests
     // Arrange
     var executionOrder = new List<string>();
 
-    var step1 = new TransformStep("Step1", ctx =>
+    var step1 = new SimpleTransformStep("Step1", ctx =>
     {
       executionOrder.Add("Step1");
       ctx.Set("step1", "done");
-      return Task.CompletedTask;
     });
 
-    var step2 = new TransformStep("Step2", ctx =>
+    var step2 = new SimpleTransformStep("Step2", ctx =>
     {
       executionOrder.Add("Step2");
       ctx.Set("step2", "done");
-      return Task.CompletedTask;
     });
 
     var pipeline = new PipelineBuilder()
@@ -158,11 +153,7 @@ public class PipelineRunnerTests
   {
     // Arrange
     var step1 = new StopStep("StopStep");
-    var step2 = new TransformStep("Step2", ctx =>
-    {
-      ctx.Set("should_not_execute", true);
-      return Task.CompletedTask;
-    });
+    var step2 = new SimpleTransformStep("Step2", ctx => { ctx.Set("should_not_execute", true); });
 
     var pipeline = new PipelineBuilder()
       .With(step1)
@@ -184,7 +175,7 @@ public class PipelineRunnerTests
   public async Task Runner_Should_Record_Failed_Execution_And_Rethrow()
   {
     // Arrange
-    var step1 = new TransformStep("FailingStep", ctx => { throw new InvalidOperationException("Test error"); });
+    var step1 = new SimpleTransformStep("FailingStep", ctx => { throw new InvalidOperationException("Test error"); });
 
     var pipeline = new PipelineBuilder()
       .With(step1)

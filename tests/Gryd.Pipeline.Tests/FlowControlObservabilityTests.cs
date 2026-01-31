@@ -1,6 +1,7 @@
 namespace Gryd.Pipeline.Tests;
 
 using Steps;
+using Fakes;
 
 /// <summary>
 /// Tests demonstrating the new Continued property for flow control observability.
@@ -11,13 +12,9 @@ public class FlowControlObservabilityTests
   public async Task StepExecution_Should_Record_Continued_True_When_Step_Continues()
   {
     // Arrange
-    var step = new TransformStep(
+    var step = new SimpleTransformStep(
       "ContinuingStep",
-      ctx =>
-      {
-        ctx.Set("executed", true);
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("executed", true); });
 
     var pipeline = new PipelineBuilder()
       .With(step)
@@ -40,22 +37,14 @@ public class FlowControlObservabilityTests
   public async Task StepExecution_Should_Record_Continued_False_When_Step_Stops()
   {
     // Arrange
-    var stopStep = new TransformStep(
+    var stopStep = new SimpleTransformStep(
       "StoppingStep",
-      ctx =>
-      {
-        ctx.Set("executed", true);
-        return Task.CompletedTask;
-      },
+      ctx => { ctx.Set("executed", true); },
       continuationCondition: _ => false); // Always stop
 
-    var neverReachedStep = new TransformStep(
+    var neverReachedStep = new SimpleTransformStep(
       "NeverReached",
-      ctx =>
-      {
-        ctx.Set("should_not_execute", true);
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("should_not_execute", true); });
 
     var pipeline = new PipelineBuilder()
       .With(stopStep)
@@ -84,7 +73,7 @@ public class FlowControlObservabilityTests
   public async Task StepExecution_Should_Record_Continued_False_On_Exception()
   {
     // Arrange
-    var failingStep = new TransformStep(
+    var failingStep = new SimpleTransformStep(
       "FailingStep",
       ctx => { throw new InvalidOperationException("Test failure"); });
 
@@ -123,12 +112,12 @@ public class FlowControlObservabilityTests
   public async Task Can_Identify_Which_Step_Stopped_Pipeline()
   {
     // Arrange: Multi-step pipeline where second step stops
-    var step1 = new TransformStep("Step1", ctx => Task.CompletedTask);
-    var step2 = new TransformStep(
+    var step1 = new SimpleTransformStep("Step1", ctx => { });
+    var step2 = new SimpleTransformStep(
       "Step2",
-      ctx => Task.CompletedTask,
+      ctx => { },
       continuationCondition: _ => false); // Stop here
-    var step3 = new TransformStep("Step3", ctx => Task.CompletedTask);
+    var step3 = new SimpleTransformStep("Step3", ctx => { });
 
     var pipeline = new PipelineBuilder()
       .With(step1)
@@ -157,7 +146,7 @@ public class FlowControlObservabilityTests
   public async Task Success_True_Does_Not_Imply_Work_Was_Done()
   {
     // Arrange: Step that does nothing based on condition
-    var conditionalStep = new TransformStep(
+    var conditionalStep = new SimpleTransformStep(
       "ConditionalWork",
       ctx =>
       {
@@ -167,7 +156,6 @@ public class FlowControlObservabilityTests
         }
 
         // If do_work is false, step does nothing but still succeeds
-        return Task.CompletedTask;
       });
 
     var pipeline = new PipelineBuilder()
@@ -197,30 +185,18 @@ public class FlowControlObservabilityTests
   public async Task Observability_Pattern_Trace_Pipeline_Execution()
   {
     // Arrange: Realistic pipeline with various flow control
-    var authenticate = new TransformStep(
+    var authenticate = new SimpleTransformStep(
       "Authenticate",
-      ctx =>
-      {
-        ctx.Set("user_id", "user123");
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("user_id", "user123"); });
 
-    var checkPermissions = new TransformStep(
+    var checkPermissions = new SimpleTransformStep(
       "CheckPermissions",
-      ctx =>
-      {
-        ctx.Set("has_permission", true);
-        return Task.CompletedTask;
-      },
+      ctx => { ctx.Set("has_permission", true); },
       continuationCondition: ctx => ctx.Get<bool>("has_permission"));
 
-    var fetchData = new TransformStep(
+    var fetchData = new SimpleTransformStep(
       "FetchData",
-      ctx =>
-      {
-        ctx.Set("data", "sensitive_data");
-        return Task.CompletedTask;
-      });
+      ctx => { ctx.Set("data", "sensitive_data"); });
 
     var pipeline = new PipelineBuilder()
       .With(authenticate)
