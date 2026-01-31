@@ -193,7 +193,8 @@ public class PipelineRunnerTests
     var runner = new PipelineRunner();
 
     // Act & Assert
-    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline, CancellationToken.None));
+    var ex =
+      await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline, CancellationToken.None));
 
     Assert.Equal("Test error", ex.Message);
   }

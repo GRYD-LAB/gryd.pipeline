@@ -33,14 +33,14 @@ public sealed class OpenRouterProvider : ILlmProvider
     var openRouterRequest = new OpenRouterRequest
     {
       Model = request.Model ?? throw new InvalidOperationException(),
-      Messages = new List<OpenRouterRequest.Message>
-      {
+      Messages =
+      [
         new OpenRouterRequest.Message
         {
           Role = "user",
           Content = request.Prompt
         }
-      },
+      ],
       Temperature = request.Temperature,
       MaxTokens = request.MaxTokens
     };

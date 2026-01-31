@@ -11,7 +11,7 @@ using Llm;
 /// </summary>
 public abstract class LlmStep<TOutput> : IPipelineStep
 {
-  private readonly JsonSerializerOptions _jsonOptions;
+  protected readonly JsonSerializerOptions JsonOptions;
 
   /// <summary>
   /// Logical name of the step, used for observability and debugging.
@@ -38,7 +38,7 @@ public abstract class LlmStep<TOutput> : IPipelineStep
     IOptions<LlmStepOptions> options,
     JsonSerializerOptions jsonOptions)
   {
-    _jsonOptions = jsonOptions;
+    JsonOptions = jsonOptions;
     Provider = provider;
     Options = options.Value;
   }
@@ -82,10 +82,10 @@ public abstract class LlmStep<TOutput> : IPipelineStep
   }
 
   /// <summary>
-  /// Maps data from the execution context into prompt variables.
+  /// Maps data from the execution ctx into prompt variables.
   /// </summary>
   protected abstract IDictionary<string, string> MapInputs(
-    ExecutionPipelineContext context);
+    ExecutionPipelineContext ctx);
 
   /// <summary>
   /// Parses the raw LLM output into the desired output type.
@@ -94,7 +94,7 @@ public abstract class LlmStep<TOutput> : IPipelineStep
   /// <returns></returns>
   /// <exception cref="InvalidOperationException"></exception>
   protected virtual TOutput Parse(string raw) =>
-    JsonSerializer.Deserialize<TOutput>(raw, _jsonOptions)
+    JsonSerializer.Deserialize<TOutput>(raw, JsonOptions)
     ?? throw new InvalidOperationException("Invalid generation output");
 
   /// <summary>

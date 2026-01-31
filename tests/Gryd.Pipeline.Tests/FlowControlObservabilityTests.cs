@@ -95,7 +95,8 @@ public class FlowControlObservabilityTests
     var runner = new PipelineRunner();
 
     // Act & Assert
-    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline, CancellationToken.None));
+    var ex =
+      await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline, CancellationToken.None));
 
     // Verify execution was recorded
     var context = new ExecutionPipelineContext();

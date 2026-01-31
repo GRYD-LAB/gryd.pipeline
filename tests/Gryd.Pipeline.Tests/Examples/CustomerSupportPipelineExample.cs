@@ -184,6 +184,7 @@ public class CustomerSupportPipelineExample
   private class CustomerResponseStep : LlmStep<string>
   {
     public override string Name => "GenerateResponse";
+
     protected override string PromptTemplate => @"
 Customer: {customer_name} ({customer_tier} tier)
 Query: {query}

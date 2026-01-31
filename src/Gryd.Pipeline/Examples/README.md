@@ -24,7 +24,8 @@ if the API changes, the examples will fail to compile, alerting us to update the
 
 ### LlmStepExamples.cs
 
-> **Note**: All examples show concrete `LlmStep<T>` implementations. `LlmStep<T>` is abstract and cannot be instantiated directly.
+> **Note**: All examples show concrete `LlmStep<T>` implementations. `LlmStep<T>` is abstract and cannot be instantiated
+> directly.
 
 - Basic LLM step with prompt templating (concrete subclass pattern)
 - Multi-step LLM pipeline

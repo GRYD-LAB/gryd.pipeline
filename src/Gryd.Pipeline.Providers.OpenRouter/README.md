@@ -76,7 +76,8 @@ var serviceProvider = services.BuildServiceProvider();
 
 ## Usage in Pipelines
 
-> ⚠️ **Important**: `LlmStep<T>` is an abstract base class. You must create concrete implementations that define your specific LLM behavior. There is no direct instantiation.
+> ⚠️ **Important**: `LlmStep<T>` is an abstract base class. You must create concrete implementations that define your
+> specific LLM behavior. There is no direct instantiation.
 
 ```csharp
 using Gryd.Pipeline;

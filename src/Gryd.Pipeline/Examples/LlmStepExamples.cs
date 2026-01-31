@@ -131,12 +131,12 @@ public static class LlmStepExamples
       {
         // Simulate document retrieval
         await Task.Delay(10);
-        return new List<string>
-        {
+        return
+        [
           "Document 1: Pipeline basics",
           "Document 2: Advanced usage",
           "Document 3: Best practices"
-        };
+        ];
       },
       saveResult: (ctx, docs) => ctx.Set("retrieved_docs", docs));
 
@@ -228,11 +228,11 @@ public static class LlmStepExamples
     {
     }
 
-    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext ctx)
     {
       return new Dictionary<string, string>
       {
-        ["query"] = context.Get<string>("user_query")
+        ["query"] = ctx.Get<string>("user_query")
       };
     }
 
@@ -256,11 +256,11 @@ public static class LlmStepExamples
     {
     }
 
-    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext ctx)
     {
       return new Dictionary<string, string>
       {
-        ["query"] = context.Get<string>("cleaned_query")
+        ["query"] = ctx.Get<string>("cleaned_query")
       };
     }
 
@@ -284,12 +284,12 @@ public static class LlmStepExamples
     {
     }
 
-    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext ctx)
     {
       return new Dictionary<string, string>
       {
-        ["intent"] = context.Get<string>("intent"),
-        ["query"] = context.Get<string>("cleaned_query")
+        ["intent"] = ctx.Get<string>("intent"),
+        ["query"] = ctx.Get<string>("cleaned_query")
       };
     }
 
@@ -313,11 +313,11 @@ public static class LlmStepExamples
     {
     }
 
-    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext ctx)
     {
       return new Dictionary<string, string>
       {
-        ["question"] = context.Get<string>("question")
+        ["question"] = ctx.Get<string>("question")
       };
     }
 
@@ -343,6 +343,7 @@ public static class LlmStepExamples
   private class GenerateAnswerStep : LlmStep<string>
   {
     public override string Name => "GenerateAnswer";
+
     protected override string PromptTemplate => @"Context:
 {context}
 
@@ -357,12 +358,12 @@ Answer based on the context:";
     {
     }
 
-    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext ctx)
     {
       return new Dictionary<string, string>
       {
-        ["query"] = context.Get<string>("query"),
-        ["context"] = context.Get<string>("document_context")
+        ["query"] = ctx.Get<string>("query"),
+        ["ctx"] = ctx.Get<string>("document_context")
       };
     }
 

@@ -270,6 +270,7 @@ internal class FakeHttpMessageHandler : HttpMessageHandler
 internal class OpenRouterResponseStep : Steps.LlmStep<string>
 {
   public override string Name => "GenerateResponse";
+
   protected override string PromptTemplate => @"
 Customer: {customer_name} ({customer_tier} tier)
 Query: {query}
@@ -359,4 +360,3 @@ internal class GenerateResponseOpenRouterStep : Steps.LlmStep<string>
 }
 
 internal record OpenRouterLlmStepOptions : Steps.LlmStepOptions;
-

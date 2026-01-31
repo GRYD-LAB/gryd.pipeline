@@ -189,7 +189,8 @@ public class OpenRouterProviderTests
     };
 
     // Act & Assert
-    await Assert.ThrowsAsync<HttpRequestException>(async () => await provider.GenerateAsync(request, CancellationToken.None));
+    await Assert.ThrowsAsync<HttpRequestException>(async () =>
+      await provider.GenerateAsync(request, CancellationToken.None));
   }
 
   [Fact]
