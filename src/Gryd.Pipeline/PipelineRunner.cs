@@ -22,23 +22,23 @@ public sealed class PipelineRunner
   /// Runs a pipeline and returns the execution context.
   /// </summary>
   public async Task<PipelineExecutionContext> RunAsync(
-    Pipeline pipeline,
+    ExecutionPipeline executionPipeline,
     CancellationToken ct = default
   )
   {
-    return await RunAsync(pipeline, new PipelineExecutionContext(), ct);
+    return await RunAsync(executionPipeline, new PipelineExecutionContext(), ct);
   }
 
   /// <summary>
   /// Runs a pipeline with an existing context and returns it.
   /// </summary>
   public async Task<PipelineExecutionContext> RunAsync(
-    Pipeline pipeline,
+    ExecutionPipeline executionPipeline,
     PipelineExecutionContext context,
     CancellationToken ct = default
   )
   {
-    foreach (var step in pipeline.Steps)
+    foreach (var step in executionPipeline.Steps)
     {
       var started = DateTimeOffset.UtcNow;
 

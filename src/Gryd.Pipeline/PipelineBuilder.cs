@@ -20,8 +20,8 @@ public sealed class PipelineBuilder
   /// <summary>
   /// Builds the pipeline from the configured steps.
   /// </summary>
-  public Pipeline Build()
+  public ExecutionPipeline Build()
   {
-    return new Pipeline(_steps);
+    return new ExecutionPipeline(_steps);
   }
 }
