@@ -4,15 +4,18 @@ A simple, production-ready OpenRouter LLM provider for the Gryd.Pipeline framewo
 
 ## What This Provider Is
 
-This provider is a **transport adapter** that bridges Gryd.Pipeline and the OpenRouter API. It provides a generic way to invoke OpenRouter models from any pipeline workflow.
+This provider is a **transport adapter** that bridges Gryd.Pipeline and the OpenRouter API. It provides a generic way to
+invoke OpenRouter models from any pipeline workflow.
 
 This provider has **no knowledge of**:
+
 - Conversations or chat history
 - Pipeline semantics or execution context
 - Domain logic or business rules
 - Multi-turn interactions
 
 It is a stateless HTTP client wrapper that:
+
 - Accepts a fully rendered prompt string
 - Sends it to OpenRouter
 - Returns raw output text and token usage metadata
@@ -73,6 +76,8 @@ var serviceProvider = services.BuildServiceProvider();
 
 ## Usage in Pipelines
 
+> ⚠️ **Important**: `LlmStep<T>` is an abstract base class. You must create concrete implementations that define your specific LLM behavior. There is no direct instantiation.
+
 ```csharp
 using Gryd.Pipeline;
 using Gryd.Pipeline.Llm;
@@ -89,20 +94,40 @@ services.AddOpenRouterProvider(options =>
 var serviceProvider = services.BuildServiceProvider();
 var provider = serviceProvider.GetRequiredService<ILlmProvider>();
 
-// Create LLM step
-var llmStep = new LlmStep<string>(
-    name: "ProcessData",
-    provider: provider,
-    inputMapper: ctx => new Dictionary<string, string>
+// Create concrete LLM step implementation
+public class ProcessDataStep : LlmStep<string>
+{
+    public override string Name => "ProcessData";
+    protected override string PromptTemplate => "Process this data: {input_data}";
+
+    public ProcessDataStep(ILlmProvider provider, IOptions<LlmStepOptions> options, JsonSerializerOptions jsonOptions)
+        : base(provider, options, jsonOptions) { }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
     {
-        ["input_data"] = ctx.Get<string>("raw_input")
-    },
-    promptTemplate: "Process this data: {input_data}",
-    outputParser: response => response.Trim(),
-    outputKey: "processed_output",
-    model: "openai/gpt-4",
-    temperature: 0.7
-);
+        return new Dictionary<string, string>
+        {
+            ["input_data"] = context.Get<string>("raw_input")
+        };
+    }
+
+    protected override string Parse(string raw) => raw.Trim();
+
+    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    {
+        context.Set("processed_output", result);
+    }
+}
+
+// Create step with options
+var llmStep = new ProcessDataStep(
+    provider,
+    Options.Create<LlmStepOptions>(new MyLlmOptions
+    {
+        Model = "openai/gpt-4",
+        Temperature = 0.7
+    }),
+    new JsonSerializerOptions());
 
 // Build and run pipeline
 var runner = new PipelineRunner();
@@ -110,10 +135,10 @@ var pipeline = new PipelineBuilder()
     .With(llmStep)
     .Build();
 
-var context = new PipelineExecutionContext();
+var context = new ExecutionPipelineContext();
 context.Set("raw_input", "example data");
 
-await runner.RunAsync(pipeline, context);
+await runner.RunAsync(pipeline, context, CancellationToken.None);
 
 var output = context.Get<string>("processed_output");
 Console.WriteLine(output);
@@ -128,6 +153,7 @@ This provider **intentionally does not implement retries**. Retry logic belongs 
 3. **Execution policy level**: Middleware or decorator around PipelineRunner
 
 Rationale:
+
 - Retry policies are domain-specific (backoff strategy, max attempts, conditions)
 - Transport concerns should be decoupled from execution policy
 - Keeps the provider simple, predictable, and testable

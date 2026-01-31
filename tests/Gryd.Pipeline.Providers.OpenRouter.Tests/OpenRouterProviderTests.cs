@@ -36,13 +36,10 @@ public class OpenRouterProviderTests
       }
     };
 
-    var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
+    var handler = new TestFakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
     var services = new ServiceCollection();
 
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "test-api-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "test-api-key"; });
 
     services.AddHttpClient<OpenRouterClient>()
       .ConfigurePrimaryHttpMessageHandler(() => handler);
@@ -60,7 +57,7 @@ public class OpenRouterProviderTests
     };
 
     // Act
-    var response = await provider.GenerateAsync(request);
+    var response = await provider.GenerateAsync(request, CancellationToken.None);
 
     // Assert
     Assert.Equal("Hello, world!", response.Content);
@@ -93,13 +90,10 @@ public class OpenRouterProviderTests
       // No usage field
     };
 
-    var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
+    var handler = new TestFakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
     var services = new ServiceCollection();
 
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "test-api-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "test-api-key"; });
 
     services.AddHttpClient<OpenRouterClient>()
       .ConfigurePrimaryHttpMessageHandler(() => handler);
@@ -115,7 +109,7 @@ public class OpenRouterProviderTests
     };
 
     // Act
-    var response = await provider.GenerateAsync(request);
+    var response = await provider.GenerateAsync(request, CancellationToken.None);
 
     // Assert
     Assert.Equal("Response text", response.Content);
@@ -139,7 +133,7 @@ public class OpenRouterProviderTests
       }
     };
 
-    var handler = new FakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
+    var handler = new TestFakeHttpMessageHandler(HttpStatusCode.OK, JsonSerializer.Serialize(fakeResponse));
     var services = new ServiceCollection();
 
     services.AddOpenRouterProvider(options =>
@@ -163,7 +157,7 @@ public class OpenRouterProviderTests
     };
 
     // Act
-    await provider.GenerateAsync(request);
+    await provider.GenerateAsync(request, CancellationToken.None);
 
     // Assert
     var sentRequest = handler.LastRequest;
@@ -176,13 +170,10 @@ public class OpenRouterProviderTests
   public async Task Provider_Should_Throw_On_Http_Error()
   {
     // Arrange
-    var handler = new FakeHttpMessageHandler(HttpStatusCode.Unauthorized, "Unauthorized");
+    var handler = new TestFakeHttpMessageHandler(HttpStatusCode.Unauthorized, "Unauthorized");
     var services = new ServiceCollection();
 
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "bad-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "bad-key"; });
 
     services.AddHttpClient<OpenRouterClient>()
       .ConfigurePrimaryHttpMessageHandler(() => handler);
@@ -198,8 +189,7 @@ public class OpenRouterProviderTests
     };
 
     // Act & Assert
-    await Assert.ThrowsAsync<HttpRequestException>(
-      async () => await provider.GenerateAsync(request));
+    await Assert.ThrowsAsync<HttpRequestException>(async () => await provider.GenerateAsync(request, CancellationToken.None));
   }
 
   [Fact]
@@ -209,10 +199,7 @@ public class OpenRouterProviderTests
     var services = new ServiceCollection();
 
     // Act
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "test-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "test-key"; });
 
     var serviceProvider = services.BuildServiceProvider();
 
@@ -229,10 +216,7 @@ public class OpenRouterProviderTests
     var services = new ServiceCollection();
 
     // Act
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "test-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "test-key"; });
 
     var serviceProvider = services.BuildServiceProvider();
 
@@ -245,14 +229,14 @@ public class OpenRouterProviderTests
 /// <summary>
 /// Fake HTTP message handler for testing.
 /// </summary>
-internal class FakeHttpMessageHandler : HttpMessageHandler
+internal class TestFakeHttpMessageHandler : HttpMessageHandler
 {
   private readonly HttpStatusCode _statusCode;
   private readonly string _responseContent;
 
   public HttpRequestMessage? LastRequest { get; private set; }
 
-  public FakeHttpMessageHandler(HttpStatusCode statusCode, string responseContent)
+  public TestFakeHttpMessageHandler(HttpStatusCode statusCode, string responseContent)
   {
     _statusCode = statusCode;
     _responseContent = responseContent;

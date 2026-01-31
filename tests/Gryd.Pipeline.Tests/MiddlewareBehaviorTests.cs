@@ -39,7 +39,7 @@ public class MiddlewareBehaviorTests
     context.Set("should_execute", false);
 
     // Act
-    var result = await runner.RunAsync(pipeline, context);
+    var result = await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     // Assert: First step skipped but second still ran
     Assert.False(result.ContainsKey("executed"));
@@ -79,7 +79,7 @@ public class MiddlewareBehaviorTests
     context.Set("value", -5);
 
     // Act
-    var result = await runner.RunAsync(pipeline, context);
+    var result = await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     // Assert: Validation ran and stopped, processing never ran
     Assert.False(result.Get<bool>("is_valid"));
@@ -120,7 +120,7 @@ public class MiddlewareBehaviorTests
     context.Set("initialized", false);
 
     // Act
-    var result = await runner.RunAsync(pipeline, context);
+    var result = await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     // Assert: Guard skipped execution and stopped pipeline
     Assert.False(result.ContainsKey("guard_passed"));
@@ -179,7 +179,7 @@ public class MiddlewareBehaviorTests
     context.Set("continue_after_step3", false);
 
     // Act
-    var result = await runner.RunAsync(pipeline, context);
+    var result = await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     // Assert
     Assert.True(result.Get<bool>("step1")); // Executed
@@ -224,12 +224,12 @@ public class MiddlewareBehaviorTests
     // Act: Invalid token
     var context1 = new ExecutionPipelineContext();
     context1.Set("auth_token", "invalid");
-    var result1 = await runner.RunAsync(pipeline, context1);
+    var result1 = await runner.RunAsync(pipeline, context1, CancellationToken.None);
 
     // Act: Valid token
     var context2 = new ExecutionPipelineContext();
     context2.Set("auth_token", "valid_token");
-    var result2 = await runner.RunAsync(pipeline, context2);
+    var result2 = await runner.RunAsync(pipeline, context2, CancellationToken.None);
 
     // Assert: Invalid token stops pipeline
     Assert.False(result1.Get<bool>("authenticated"));
@@ -284,19 +284,19 @@ public class MiddlewareBehaviorTests
     var premiumContext = new ExecutionPipelineContext();
     premiumContext.Set("is_premium", true);
     premiumContext.Set("request_count", 1000);
-    var premiumResult = await runner.RunAsync(pipeline, premiumContext);
+    var premiumResult = await runner.RunAsync(pipeline, premiumContext, CancellationToken.None);
 
     // Act: Regular user over limit (should stop)
     var overLimitContext = new ExecutionPipelineContext();
     overLimitContext.Set("is_premium", false);
     overLimitContext.Set("request_count", 150);
-    var overLimitResult = await runner.RunAsync(pipeline, overLimitContext);
+    var overLimitResult = await runner.RunAsync(pipeline, overLimitContext, CancellationToken.None);
 
     // Act: Regular user within limit (should continue)
     var withinLimitContext = new ExecutionPipelineContext();
     withinLimitContext.Set("is_premium", false);
     withinLimitContext.Set("request_count", 50);
-    var withinLimitResult = await runner.RunAsync(pipeline, withinLimitContext);
+    var withinLimitResult = await runner.RunAsync(pipeline, withinLimitContext, CancellationToken.None);
 
     // Assert: Premium user bypasses rate limit
     Assert.False(premiumResult.ContainsKey("rate_limit_ok"));

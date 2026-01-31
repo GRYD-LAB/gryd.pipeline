@@ -2,6 +2,8 @@ namespace Gryd.Pipeline.Providers.OpenRouter.Tests;
 
 using Steps;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 using Xunit;
 
 /// <summary>
@@ -38,7 +40,7 @@ public class IntegrationExample
           {
             role = "assistant",
             content = "Thank you for being a valued Premium customer! " +
-                     "To return a product, please visit our returns portal."
+                      "To return a product, please visit our returns portal."
           },
           finish_reason = "stop"
         }
@@ -71,25 +73,15 @@ public class IntegrationExample
       return Task.CompletedTask;
     });
 
-    var llmStep = new LlmStep<string>(
-      name: "GenerateResponse",
-      provider: provider,
-      inputMapper: ctx => new Dictionary<string, string>
+    var llmStep = new OpenRouterResponseStep(
+      provider,
+      Options.Create<LlmStepOptions>(new OpenRouterLlmStepOptions
       {
-        ["customer_name"] = ctx.Get<string>("customer_name"),
-        ["customer_tier"] = ctx.Get<string>("customer_tier"),
-        ["query"] = ctx.Get<string>("query")
-      },
-      promptTemplate: @"
-Customer: {customer_name} ({customer_tier} tier)
-Query: {query}
-
-Generate a helpful and personalized response:",
-      outputParser: response => response.Trim(),
-      outputKey: "llm_response",
-      model: "openai/gpt-4",
-      temperature: 0.7,
-      maxTokens: 500);
+        Model = "openai/gpt-4",
+        Temperature = 0.7,
+        MaxTokens = 500
+      }),
+      new JsonSerializerOptions());
 
     var validateStep = new TransformStep("Validate", ctx =>
     {
@@ -108,7 +100,7 @@ Generate a helpful and personalized response:",
       .With(validateStep)
       .Build();
 
-    var context = await runner.RunAsync(pipeline);
+    var context = await runner.RunAsync(pipeline, CancellationToken.None);
 
     // ============================================================
     // VERIFY RESULTS
@@ -132,10 +124,7 @@ Generate a helpful and personalized response:",
     // ============================================================
     var services = new ServiceCollection();
 
-    services.AddOpenRouterProvider(options =>
-    {
-      options.ApiKey = "test-key";
-    });
+    services.AddOpenRouterProvider(options => { options.ApiKey = "test-key"; });
 
     // Mock responses for each LLM call
     var responses = new[]
@@ -153,31 +142,16 @@ Generate a helpful and personalized response:",
     var provider = serviceProvider.GetRequiredService<Llm.ILlmProvider>();
 
     // Step 1: Classify intent
-    var classifyStep = new LlmStep<string>(
-      name: "ClassifyIntent",
-      provider: provider,
-      inputMapper: ctx => new Dictionary<string, string>
-      {
-        ["query"] = ctx.Get<string>("query")
-      },
-      promptTemplate: "Classify the intent of: {query}",
-      outputParser: response => response.Trim(),
-      outputKey: "intent",
-      model: "openai/gpt-3.5-turbo");
+    var classifyStep = new ClassifyIntentOpenRouterStep(
+      provider,
+      Options.Create<LlmStepOptions>(new OpenRouterLlmStepOptions { Model = "openai/gpt-3.5-turbo" }),
+      new JsonSerializerOptions());
 
     // Step 2: Generate response based on intent
-    var respondStep = new LlmStep<string>(
-      name: "GenerateResponse",
-      provider: provider,
-      inputMapper: ctx => new Dictionary<string, string>
-      {
-        ["intent"] = ctx.Get<string>("intent"),
-        ["query"] = ctx.Get<string>("query")
-      },
-      promptTemplate: "Intent: {intent}\nQuery: {query}\n\nGenerate response:",
-      outputParser: response => response.Trim(),
-      outputKey: "final_response",
-      model: "openai/gpt-4");
+    var respondStep = new GenerateResponseOpenRouterStep(
+      provider,
+      Options.Create<LlmStepOptions>(new OpenRouterLlmStepOptions { Model = "openai/gpt-4" }),
+      new JsonSerializerOptions());
 
     var runner = new PipelineRunner();
     var pipeline = new PipelineBuilder()
@@ -188,7 +162,7 @@ Generate a helpful and personalized response:",
     var context = new ExecutionPipelineContext();
     context.Set("query", "I need to return my order");
 
-    await runner.RunAsync(pipeline, context);
+    await runner.RunAsync(pipeline, context, CancellationToken.None);
 
     // Verify both LLM steps executed
     Assert.Equal(2, context.Executions.Count);
@@ -263,3 +237,126 @@ internal class CallCountingFakeHandler : HttpMessageHandler
     return Task.FromResult(response);
   }
 }
+
+/// <summary>
+/// Fake HTTP handler for testing.
+/// </summary>
+internal class FakeHttpMessageHandler : HttpMessageHandler
+{
+  private readonly System.Net.HttpStatusCode _statusCode;
+  private readonly string _responseContent;
+
+  public FakeHttpMessageHandler(System.Net.HttpStatusCode statusCode, string responseContent)
+  {
+    _statusCode = statusCode;
+    _responseContent = responseContent;
+  }
+
+  protected override Task<HttpResponseMessage> SendAsync(
+    HttpRequestMessage request,
+    CancellationToken cancellationToken)
+  {
+    var response = new HttpResponseMessage(_statusCode)
+    {
+      Content = new StringContent(_responseContent, System.Text.Encoding.UTF8, "application/json")
+    };
+    return Task.FromResult(response);
+  }
+}
+
+/// <summary>
+/// Concrete LlmStep implementations for OpenRouter tests
+/// </summary>
+internal class OpenRouterResponseStep : Steps.LlmStep<string>
+{
+  public override string Name => "GenerateResponse";
+  protected override string PromptTemplate => @"
+Customer: {customer_name} ({customer_tier} tier)
+Query: {query}
+
+Generate a helpful and personalized response:";
+
+  public OpenRouterResponseStep(
+    Llm.ILlmProvider provider,
+    IOptions<Steps.LlmStepOptions> options,
+    JsonSerializerOptions jsonOptions) : base(provider, options, jsonOptions)
+  {
+  }
+
+  protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+  {
+    return new Dictionary<string, string>
+    {
+      ["customer_name"] = context.Get<string>("customer_name"),
+      ["customer_tier"] = context.Get<string>("customer_tier"),
+      ["query"] = context.Get<string>("query")
+    };
+  }
+
+  protected override string Parse(string raw) => raw.Trim();
+
+  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  {
+    context.Set("llm_response", result);
+  }
+}
+
+internal class ClassifyIntentOpenRouterStep : Steps.LlmStep<string>
+{
+  public override string Name => "ClassifyIntent";
+  protected override string PromptTemplate => "Classify the intent of: {query}";
+
+  public ClassifyIntentOpenRouterStep(
+    Llm.ILlmProvider provider,
+    IOptions<Steps.LlmStepOptions> options,
+    JsonSerializerOptions jsonOptions) : base(provider, options, jsonOptions)
+  {
+  }
+
+  protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+  {
+    return new Dictionary<string, string>
+    {
+      ["query"] = context.Get<string>("query")
+    };
+  }
+
+  protected override string Parse(string raw) => raw.Trim();
+
+  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  {
+    context.Set("intent", result);
+  }
+}
+
+internal class GenerateResponseOpenRouterStep : Steps.LlmStep<string>
+{
+  public override string Name => "GenerateResponse";
+  protected override string PromptTemplate => "Intent: {intent}\nQuery: {query}\n\nGenerate response:";
+
+  public GenerateResponseOpenRouterStep(
+    Llm.ILlmProvider provider,
+    IOptions<Steps.LlmStepOptions> options,
+    JsonSerializerOptions jsonOptions) : base(provider, options, jsonOptions)
+  {
+  }
+
+  protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+  {
+    return new Dictionary<string, string>
+    {
+      ["intent"] = context.Get<string>("intent"),
+      ["query"] = context.Get<string>("query")
+    };
+  }
+
+  protected override string Parse(string raw) => raw.Trim();
+
+  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  {
+    context.Set("final_response", result);
+  }
+}
+
+internal record OpenRouterLlmStepOptions : Steps.LlmStepOptions;
+

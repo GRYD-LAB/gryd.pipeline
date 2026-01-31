@@ -7,11 +7,9 @@ using System.Text.Json.Serialization;
 /// </summary>
 public sealed class OpenRouterRequest
 {
-  [JsonPropertyName("model")]
-  public required string Model { get; init; }
+  [JsonPropertyName("model")] public required string Model { get; init; }
 
-  [JsonPropertyName("messages")]
-  public required List<Message> Messages { get; init; }
+  [JsonPropertyName("messages")] public required List<Message> Messages { get; init; }
 
   [JsonPropertyName("temperature")]
   [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -23,10 +21,8 @@ public sealed class OpenRouterRequest
 
   public sealed class Message
   {
-    [JsonPropertyName("role")]
-    public required string Role { get; init; }
+    [JsonPropertyName("role")] public required string Role { get; init; }
 
-    [JsonPropertyName("content")]
-    public required string Content { get; init; }
+    [JsonPropertyName("content")] public required string Content { get; init; }
   }
 }

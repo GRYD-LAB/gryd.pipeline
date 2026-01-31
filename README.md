@@ -39,6 +39,30 @@ Comprehensive, compilable examples are available in the [src/Gryd.Pipeline/Examp
 
 These examples are written in C# and compile with the project, ensuring they stay up-to-date with API changes.
 
+## Design Philosophy
+
+### Explicit Over Implicit
+
+This framework enforces **explicit domain modeling** through concrete step types:
+
+- **No generic steps**: There is no "generic LLM step" or "generic transform step"
+- **Abstract base classes**: Built-in steps like `LlmStep<T>` are abstract and require concrete implementations
+- **Compile-time contracts**: Each step explicitly declares what it reads from and writes to the context
+
+**Why?**
+
+1. **Clarity**: Reading code shows exactly what each step does—no hidden behavior
+2. **Type Safety**: Compile-time validation of data flow contracts
+3. **Testability**: Each step is a distinct, testable type
+4. **Maintainability**: Changes to a step's behavior are localized to that type
+
+When you see:
+```csharp
+var step = new ClassifyIntentStep(provider, options, jsonOptions);
+```
+
+You immediately know this step classifies intent—not from a string name, but from the type itself.
+
 ## Core Abstractions
 
 ### Pipeline
@@ -166,22 +190,62 @@ var step = new ExternalCallStep<ApiRequest, ApiResponse>(
 
 ### LlmStep
 
-LLM provider invocation with prompt templating:
+**Abstract base class** for LLM provider invocation with prompt templating.
+
+> ⚠️ **Important**: `LlmStep<T>` is abstract and **cannot be instantiated directly**. You must create concrete subclasses that define the specific behavior for your use case.
+
+Create concrete implementations by extending this class:
 
 ```csharp
-var step = new LlmStep<string>(
-    name: "GenerateOutput",
-    provider: llmProvider,
-    inputMapper: ctx => new Dictionary<string, string>
+public class GenerateOutputStep : LlmStep<string>
+{
+    public override string Name => "GenerateOutput";
+    protected override string PromptTemplate => "Process this data: {input_text}";
+
+    public GenerateOutputStep(
+        ILlmProvider provider,
+        IOptions<LlmStepOptions> options,
+        JsonSerializerOptions jsonOptions)
+        : base(provider, options, jsonOptions)
     {
-        ["input_text"] = ctx.Get<string>("input_text")
-    },
-    promptTemplate: "Process this data: {input_text}",
-    outputParser: response => response.Trim(),
-    outputKey: "generated_output",
-    model: "gpt-4",
-    temperature: 0.7);
+    }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    {
+        return new Dictionary<string, string>
+        {
+            ["input_text"] = context.Get<string>("input_text")
+        };
+    }
+
+    protected override string Parse(string raw) => raw.Trim();
+
+    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    {
+        context.Set("generated_output", result);
+    }
+}
+
+// Configure with options
+var options = Options.Create<LlmStepOptions>(new MyLlmStepOptions
+{
+    Model = "gpt-4",
+    Temperature = 0.7
+});
+var step = new GenerateOutputStep(llmProvider, options, jsonOptions);
 ```
+
+**Why Abstract?**
+
+This design enforces explicit, type-safe LLM step definitions. Each concrete step class:
+- Clearly documents its input requirements via `MapInputs()`
+- Explicitly declares what it writes to the context via `WriteResult()`
+- Can override parsing logic, execution conditions, and flow control
+- Provides compile-time validation of the step's contract
+
+There is no "generic" LLM step—every LLM invocation is a specific domain operation.
+
+See [LlmStepExamples.cs](src/Gryd.Pipeline/Examples/LlmStepExamples.cs) for more examples.
 
 ## Context Usage Guidelines
 
@@ -264,6 +328,32 @@ var result = context.Get<string>("enriched_data");
 ### LLM Enrichment Pipeline
 
 ```csharp
+// Define a concrete LLM step
+public class AnalysisStep : LlmStep<string>
+{
+    public override string Name => "EnrichWithLlm";
+    protected override string PromptTemplate => "Analyze this data and extract key information: {data}";
+
+    public AnalysisStep(ILlmProvider provider, IOptions<LlmStepOptions> options, JsonSerializerOptions jsonOptions)
+        : base(provider, options, jsonOptions) { }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    {
+        return new Dictionary<string, string>
+        {
+            ["data"] = context.Get<string>("processed_input")
+        };
+    }
+
+    protected override string Parse(string raw) => raw.Trim();
+
+    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    {
+        context.Set("llm_analysis", result);
+    }
+}
+
+// Build pipeline
 var prepareStep = new TransformStep("PrepareInput", ctx =>
 {
     var rawData = ctx.Get<string>("raw_input");
@@ -271,16 +361,10 @@ var prepareStep = new TransformStep("PrepareInput", ctx =>
     return Task.CompletedTask;
 });
 
-var llmStep = new LlmStep<string>(
-    name: "EnrichWithLlm",
-    provider: llmProvider,
-    inputMapper: ctx => new Dictionary<string, string>
-    {
-        ["data"] = ctx.Get<string>("processed_input")
-    },
-    promptTemplate: "Analyze this data and extract key information: {data}",
-    outputParser: response => response.Trim(),
-    outputKey: "llm_analysis");
+var llmStep = new AnalysisStep(
+    llmProvider,
+    Options.Create<LlmStepOptions>(new MyLlmOptions { Model = "gpt-4" }),
+    new JsonSerializerOptions());
 
 var storeStep = new TransformStep("Store", ctx =>
 {

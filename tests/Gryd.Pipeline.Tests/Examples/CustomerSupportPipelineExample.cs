@@ -2,6 +2,8 @@ namespace Gryd.Pipeline.Tests.Examples;
 
 using Steps;
 using Fakes;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 /// <summary>
 /// Complete example: Customer Support Assistant Pipeline
@@ -74,24 +76,10 @@ public class CustomerSupportPipelineExample
         return "Thank you for your inquiry. How may we assist you today?";
     });
 
-    var llmStep = new LlmStep<string>(
-      name: "GenerateResponse",
-      provider: provider,
-      inputMapper: ctx => new Dictionary<string, string>
-      {
-        ["customer_name"] = ctx.Get<string>("customer_name"),
-        ["customer_tier"] = ctx.Get<string>("customer_tier"),
-        ["query"] = ctx.Get<string>("customer_query")
-      },
-      promptTemplate: @"
-Customer: {customer_name} ({customer_tier} tier)
-Query: {query}
-
-Generate a helpful and personalized response:",
-      outputParser: response => response.Trim(),
-      outputKey: "generated_response",
-      model: "gpt-4",
-      temperature: 0.7);
+    var llmStep = new CustomerResponseStep(
+      provider,
+      Options.Create<LlmStepOptions>(new CustomerLlmStepOptions { Model = "gpt-4", Temperature = 0.7 }),
+      new JsonSerializerOptions());
 
     // ============================================================
     // STEP 4: Log Interaction
@@ -137,7 +125,7 @@ Generate a helpful and personalized response:",
       .Build();
 
     // Execute
-    var context = await runner.RunAsync(pipeline);
+    var context = await runner.RunAsync(pipeline, CancellationToken.None);
 
     // ============================================================
     // VERIFY RESULTS
@@ -191,4 +179,41 @@ Generate a helpful and personalized response:",
     public required string Response { get; init; }
     public DateTime Timestamp { get; init; }
   }
+
+  // Concrete LlmStep implementation for customer support
+  private class CustomerResponseStep : LlmStep<string>
+  {
+    public override string Name => "GenerateResponse";
+    protected override string PromptTemplate => @"
+Customer: {customer_name} ({customer_tier} tier)
+Query: {query}
+
+Generate a helpful and personalized response:";
+
+    public CustomerResponseStep(
+      Llm.ILlmProvider provider,
+      IOptions<LlmStepOptions> options,
+      JsonSerializerOptions jsonOptions) : base(provider, options, jsonOptions)
+    {
+    }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+    {
+      return new Dictionary<string, string>
+      {
+        ["customer_name"] = context.Get<string>("customer_name"),
+        ["customer_tier"] = context.Get<string>("customer_tier"),
+        ["query"] = context.Get<string>("customer_query")
+      };
+    }
+
+    protected override string Parse(string raw) => raw.Trim();
+
+    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    {
+      context.Set("generated_response", result);
+    }
+  }
+
+  private record CustomerLlmStepOptions : LlmStepOptions;
 }

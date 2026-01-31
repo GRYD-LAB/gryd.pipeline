@@ -2,6 +2,8 @@ namespace Gryd.Pipeline.Tests;
 
 using Steps;
 using Fakes;
+using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 public class LlmStepTests
 {
@@ -11,9 +13,10 @@ public class LlmStepTests
     // Arrange
     var provider = new FakeLlmProvider("Generated response");
 
-    var llmStep = new LlmStep<string>(
-      name: "TestLlm",
-      provider: provider,
+    var llmStep = new TestLlmStep(
+      provider,
+      Options.Create<LlmStepOptions>(new TestLlmStepOptions { Model = "test-model" }),
+      new JsonSerializerOptions(),
       inputMapper: ctx => new Dictionary<string, string>
       {
         ["user_name"] = ctx.Get<string>("name"),
@@ -42,9 +45,10 @@ public class LlmStepTests
     var provider = new FakeLlmProvider(prompt =>
       prompt.Contains("math") ? "42" : "Unknown");
 
-    var llmStep = new LlmStep<int>(
-      name: "MathLlm",
-      provider: provider,
+    var llmStep = new TestLlmStepInt(
+      provider,
+      Options.Create<LlmStepOptions>(new TestLlmStepOptions { Model = "test-model" }),
+      new JsonSerializerOptions(),
       inputMapper: ctx => new Dictionary<string, string>
       {
         ["query"] = ctx.Get<string>("query")
@@ -76,9 +80,10 @@ public class LlmStepTests
       return Task.CompletedTask;
     });
 
-    var llmStep = new LlmStep<string>(
-      name: "AskCapital",
-      provider: provider,
+    var llmStep = new TestLlmStep(
+      provider,
+      Options.Create<LlmStepOptions>(new TestLlmStepOptions { Model = "test-model" }),
+      new JsonSerializerOptions(),
       inputMapper: ctx => new Dictionary<string, string>
       {
         ["country"] = ctx.Get<string>("country")
@@ -103,7 +108,7 @@ public class LlmStepTests
     var runner = new PipelineRunner();
 
     // Act
-    var context = await runner.RunAsync(pipeline);
+    var context = await runner.RunAsync(pipeline, CancellationToken.None);
 
     // Assert
     Assert.Equal("Paris", context.Get<string>("capital"));
@@ -111,4 +116,75 @@ public class LlmStepTests
     Assert.Equal(3, context.Executions.Count);
     Assert.All(context.Executions, e => Assert.True(e.Success));
   }
+
+  // Test helper classes
+  private class TestLlmStep : LlmStep<string>
+  {
+    private readonly Func<ExecutionPipelineContext, IDictionary<string, string>> _inputMapper;
+    private readonly string _promptTemplate;
+    private readonly Func<string, string> _outputParser;
+    private readonly string _outputKey;
+
+    public override string Name => "TestLlm";
+    protected override string PromptTemplate => _promptTemplate;
+
+    public TestLlmStep(
+      Llm.ILlmProvider provider,
+      IOptions<LlmStepOptions> options,
+      JsonSerializerOptions jsonOptions,
+      Func<ExecutionPipelineContext, IDictionary<string, string>> inputMapper,
+      string promptTemplate,
+      Func<string, string> outputParser,
+      string outputKey) : base(provider, options, jsonOptions)
+    {
+      _inputMapper = inputMapper;
+      _promptTemplate = promptTemplate;
+      _outputParser = outputParser;
+      _outputKey = outputKey;
+    }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+      => _inputMapper(context);
+
+    protected override string Parse(string raw) => _outputParser(raw);
+
+    protected override void WriteResult(ExecutionPipelineContext context, string result)
+      => context.Set(_outputKey, result);
+  }
+
+  private class TestLlmStepInt : LlmStep<int>
+  {
+    private readonly Func<ExecutionPipelineContext, IDictionary<string, string>> _inputMapper;
+    private readonly string _promptTemplate;
+    private readonly Func<string, int> _outputParser;
+    private readonly string _outputKey;
+
+    public override string Name => "MathLlm";
+    protected override string PromptTemplate => _promptTemplate;
+
+    public TestLlmStepInt(
+      Llm.ILlmProvider provider,
+      IOptions<LlmStepOptions> options,
+      JsonSerializerOptions jsonOptions,
+      Func<ExecutionPipelineContext, IDictionary<string, string>> inputMapper,
+      string promptTemplate,
+      Func<string, int> outputParser,
+      string outputKey) : base(provider, options, jsonOptions)
+    {
+      _inputMapper = inputMapper;
+      _promptTemplate = promptTemplate;
+      _outputParser = outputParser;
+      _outputKey = outputKey;
+    }
+
+    protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
+      => _inputMapper(context);
+
+    protected override int Parse(string raw) => _outputParser(raw);
+
+    protected override void WriteResult(ExecutionPipelineContext context, int result)
+      => context.Set(_outputKey, result);
+  }
+
+  private record TestLlmStepOptions : LlmStepOptions;
 }

@@ -1,3 +1,6 @@
+using System.Text.Json;
+using Microsoft.Extensions.Options;
+
 namespace Gryd.Pipeline.Steps;
 
 using Llm;
@@ -6,12 +9,14 @@ using Llm;
 /// Pipeline step that invokes an LLM using a prompt template
 /// and stores its result explicitly in the execution context.
 /// </summary>
-public sealed class LlmStep<TOutput> : IPipelineStep
+public abstract class LlmStep<TOutput> : IPipelineStep
 {
+  private readonly JsonSerializerOptions _jsonOptions;
+
   /// <summary>
   /// Logical name of the step, used for observability and debugging.
   /// </summary>
-  public string Name { get; }
+  public abstract string Name { get; }
 
   /// <summary>
   /// The LLM provider to use for generation.
@@ -19,76 +24,23 @@ public sealed class LlmStep<TOutput> : IPipelineStep
   public ILlmProvider Provider { get; }
 
   /// <summary>
-  /// Maps data from the execution context into prompt variables.
-  /// </summary>
-  public Func<ExecutionPipelineContext, IDictionary<string, string>> InputMapper { get; }
-
-  /// <summary>
   /// The prompt template to render.
   /// </summary>
-  public string PromptTemplate { get; }
+  protected abstract string PromptTemplate { get; }
 
   /// <summary>
-  /// Parses the raw LLM response into the desired output type.
+  /// Optional model identifier to use for this step.
   /// </summary>
-  public Func<string, TOutput> OutputParser { get; }
+  public LlmStepOptions Options { get; }
 
-  /// <summary>
-  /// Key under which the parsed result will be stored in the context.
-  /// </summary>
-  public string OutputKey { get; }
-
-  /// <summary>
-  /// Optional model identifier.
-  /// </summary>
-  public string? Model { get; }
-
-  /// <summary>
-  /// Optional temperature parameter.
-  /// </summary>
-  public double? Temperature { get; }
-
-  /// <summary>
-  /// Optional maximum tokens.
-  /// </summary>
-  public int? MaxTokens { get; }
-
-  /// <summary>
-  /// Predicate to determine if this step should execute.
-  /// If false, the step returns StepResult.Continue() without doing work.
-  /// </summary>
-  public Func<ExecutionPipelineContext, bool> ExecutionCondition { get; }
-
-  /// <summary>
-  /// Function to determine the flow control decision after execution.
-  /// Receives the context and returns whether to continue (true) or stop (false).
-  /// </summary>
-  public Func<ExecutionPipelineContext, bool> ContinuationCondition { get; }
-
-  public LlmStep(
-    string name,
+  protected LlmStep(
     ILlmProvider provider,
-    Func<ExecutionPipelineContext, IDictionary<string, string>> inputMapper,
-    string promptTemplate,
-    Func<string, TOutput> outputParser,
-    string outputKey,
-    string? model = null,
-    double? temperature = null,
-    int? maxTokens = null,
-    Func<ExecutionPipelineContext, bool>? executionCondition = null,
-    Func<ExecutionPipelineContext, bool>? continuationCondition = null)
+    IOptions<LlmStepOptions> options,
+    JsonSerializerOptions jsonOptions)
   {
-    Name = name;
+    _jsonOptions = jsonOptions;
     Provider = provider;
-    InputMapper = inputMapper;
-    PromptTemplate = promptTemplate;
-    OutputParser = outputParser;
-    OutputKey = outputKey;
-    Model = model;
-    Temperature = temperature;
-    MaxTokens = maxTokens;
-    ExecutionCondition = executionCondition ?? (_ => true);
-    ContinuationCondition = continuationCondition ?? (_ => true);
+    Options = options.Value;
   }
 
   public async Task<StepResult> ExecuteAsync(
@@ -97,10 +49,10 @@ public sealed class LlmStep<TOutput> : IPipelineStep
   )
   {
     // The step decides whether to perform work
-    if (ExecutionCondition(context))
+    if (ShouldExecute(context))
     {
       // 1. Read inputs from context
-      var inputs = InputMapper(context);
+      var inputs = MapInputs(context);
 
       // 2. Render prompt
       var prompt = RenderPrompt(PromptTemplate, inputs);
@@ -109,34 +61,78 @@ public sealed class LlmStep<TOutput> : IPipelineStep
       var request = new LlmRequest
       {
         Prompt = prompt,
-        Model = Model,
-        Temperature = Temperature,
-        MaxTokens = MaxTokens
+        Model = Options.Model,
+        Temperature = Options.Temperature,
+        MaxTokens = Options.MaxTokens
       };
 
       var response = await Provider.GenerateAsync(request, ct);
 
       // 4. Parse / validate
-      var parsedOutput = OutputParser(response.Content);
+      var parsedOutput = Parse(response.Content);
 
-      // 5. Store result explicitly in context
-      context.Set(OutputKey, parsedOutput);
+      // 5. Store result (always)
+      WriteResult(context, parsedOutput);
     }
 
     // 6. Decide whether pipeline should continue (independent of execution)
-    return ContinuationCondition(context)
+    return ShouldContinue(context)
       ? StepResult.Continue()
       : StepResult.Stop();
   }
 
-  private static string RenderPrompt(string template, IDictionary<string, string> variables)
+  /// <summary>
+  /// Maps data from the execution context into prompt variables.
+  /// </summary>
+  protected abstract IDictionary<string, string> MapInputs(
+    ExecutionPipelineContext context);
+
+  /// <summary>
+  /// Parses the raw LLM output into the desired output type.
+  /// </summary>
+  /// <param name="raw"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  protected virtual TOutput Parse(string raw) =>
+    JsonSerializer.Deserialize<TOutput>(raw, _jsonOptions)
+    ?? throw new InvalidOperationException("Invalid generation output");
+
+  /// <summary>
+  /// Stores the result in the execution context.
+  /// </summary>
+  protected abstract void WriteResult(
+    ExecutionPipelineContext context,
+    TOutput result);
+
+  /// <summary>
+  /// Predicate to determine if this step should execute.
+  /// If false, the step returns StepResult.Continue() without doing work.
+  /// </summary>
+  protected virtual bool ShouldExecute(
+    ExecutionPipelineContext context) => true;
+
+  /// <summary>
+  /// Function to determine the flow control decision after execution.
+  /// Receives the context and returns whether to continue (true) or stop (false).
+  /// </summary>
+  protected virtual bool ShouldContinue(
+    ExecutionPipelineContext context) => true;
+
+  protected static string RenderPrompt(
+    string template,
+    IDictionary<string, string> variables)
   {
     var result = template;
     foreach (var (key, value) in variables)
-    {
       result = result.Replace($"{{{key}}}", value);
-    }
 
     return result;
   }
+}
+
+public abstract record LlmStepOptions
+{
+  public required string Model { get; set; }
+  public double Temperature { get; init; } = 0.0;
+  public int? MaxTokens { get; init; }
 }

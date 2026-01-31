@@ -23,7 +23,7 @@ public sealed class PipelineRunner
   /// </summary>
   public async Task<ExecutionPipelineContext> RunAsync(
     ExecutionPipeline executionPipeline,
-    CancellationToken ct = default
+    CancellationToken ct
   )
   {
     return await RunAsync(executionPipeline, new ExecutionPipelineContext(), ct);
@@ -35,7 +35,7 @@ public sealed class PipelineRunner
   public async Task<ExecutionPipelineContext> RunAsync(
     ExecutionPipeline executionPipeline,
     ExecutionPipelineContext context,
-    CancellationToken ct = default
+    CancellationToken ct
   )
   {
     foreach (var step in executionPipeline.Steps)

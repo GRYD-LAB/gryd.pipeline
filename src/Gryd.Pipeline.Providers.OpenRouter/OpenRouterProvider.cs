@@ -23,11 +23,11 @@ public sealed class OpenRouterProvider : ILlmProvider
   /// Generates a completion from OpenRouter.
   /// </summary>
   /// <param name="request">The LLM request containing the prompt and parameters.</param>
-  /// <param name="cancellationToken">Cancellation token.</param>
+  /// <param name="ct">Cancellation token.</param>
   /// <returns>The raw LLM response with text and token usage.</returns>
   public async Task<LlmRawResponse> GenerateAsync(
     LlmRequest request,
-    CancellationToken cancellationToken = default)
+    CancellationToken ct)
   {
     // Map LlmRequest to OpenRouterRequest
     var openRouterRequest = new OpenRouterRequest
@@ -48,7 +48,7 @@ public sealed class OpenRouterProvider : ILlmProvider
     // Call OpenRouter API
     var openRouterResponse = await _client.CreateChatCompletionAsync(
       openRouterRequest,
-      cancellationToken);
+      ct);
 
     // Map OpenRouterResponse to LlmRawResponse
     var firstChoice = openRouterResponse.Choices.FirstOrDefault();

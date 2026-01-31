@@ -141,7 +141,7 @@ public class PipelineRunnerTests
     var runner = new PipelineRunner();
 
     // Act
-    var context = await runner.RunAsync(pipeline);
+    var context = await runner.RunAsync(pipeline, CancellationToken.None);
 
     // Assert
     Assert.Equal(2, executionOrder.Count);
@@ -172,7 +172,7 @@ public class PipelineRunnerTests
     var runner = new PipelineRunner();
 
     // Act
-    var context = await runner.RunAsync(pipeline);
+    var context = await runner.RunAsync(pipeline, CancellationToken.None);
 
     // Assert
     Assert.Single(context.Executions);
@@ -193,7 +193,7 @@ public class PipelineRunnerTests
     var runner = new PipelineRunner();
 
     // Act & Assert
-    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline));
+    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => runner.RunAsync(pipeline, CancellationToken.None));
 
     Assert.Equal("Test error", ex.Message);
   }

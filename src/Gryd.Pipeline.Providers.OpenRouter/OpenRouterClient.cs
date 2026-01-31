@@ -1,6 +1,7 @@
+using System.Net.Http.Json;
+
 namespace Gryd.Pipeline.Providers.OpenRouter;
 
-using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
@@ -49,24 +50,24 @@ public sealed class OpenRouterClient
   /// Calls the OpenRouter chat completion API.
   /// </summary>
   /// <param name="request">The request payload.</param>
-  /// <param name="cancellationToken">Cancellation token.</param>
+  /// <param name="ct">Cancellation token.</param>
   /// <returns>The API response.</returns>
   /// <exception cref="HttpRequestException">Thrown when the API call fails.</exception>
   public async Task<OpenRouterResponse> CreateChatCompletionAsync(
     OpenRouterRequest request,
-    CancellationToken cancellationToken = default)
+    CancellationToken ct)
   {
     var response = await _httpClient.PostAsJsonAsync(
       "chat/completions",
       request,
       JsonOptions,
-      cancellationToken);
+      ct);
 
     response.EnsureSuccessStatusCode();
 
     var result = await response.Content.ReadFromJsonAsync<OpenRouterResponse>(
       JsonOptions,
-      cancellationToken);
+      ct);
 
     if (result is null)
     {
