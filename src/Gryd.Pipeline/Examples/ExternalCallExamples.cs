@@ -53,7 +53,7 @@ public static class ExternalCallExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("city", "San Francisco");
 
         await runner.RunAsync(pipeline, context);
@@ -93,7 +93,7 @@ public static class ExternalCallExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("username", "john_doe");
 
         await runner.RunAsync(pipeline, context);
@@ -129,7 +129,7 @@ public static class ExternalCallExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("name", "Product");
         context.Set("category", "Electronics");
 

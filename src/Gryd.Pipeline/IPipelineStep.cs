@@ -21,7 +21,7 @@ public interface IPipelineStep
   /// - Whether the pipeline should continue or stop (via StepResult)
   /// </summary>
   Task<StepResult> ExecuteAsync(
-    PipelineExecutionContext context,
+    ExecutionPipelineContext context,
     CancellationToken ct
   );
 }

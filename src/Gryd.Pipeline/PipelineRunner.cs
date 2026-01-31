@@ -21,20 +21,20 @@ public sealed class PipelineRunner
   /// <summary>
   /// Runs a pipeline and returns the execution context.
   /// </summary>
-  public async Task<PipelineExecutionContext> RunAsync(
+  public async Task<ExecutionPipelineContext> RunAsync(
     ExecutionPipeline executionPipeline,
     CancellationToken ct = default
   )
   {
-    return await RunAsync(executionPipeline, new PipelineExecutionContext(), ct);
+    return await RunAsync(executionPipeline, new ExecutionPipelineContext(), ct);
   }
 
   /// <summary>
   /// Runs a pipeline with an existing context and returns it.
   /// </summary>
-  public async Task<PipelineExecutionContext> RunAsync(
+  public async Task<ExecutionPipelineContext> RunAsync(
     ExecutionPipeline executionPipeline,
-    PipelineExecutionContext context,
+    ExecutionPipelineContext context,
     CancellationToken ct = default
   )
   {

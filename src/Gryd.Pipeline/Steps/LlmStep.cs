@@ -21,7 +21,7 @@ public sealed class LlmStep<TOutput> : IPipelineStep
   /// <summary>
   /// Maps data from the execution context into prompt variables.
   /// </summary>
-  public Func<PipelineExecutionContext, IDictionary<string, string>> InputMapper { get; }
+  public Func<ExecutionPipelineContext, IDictionary<string, string>> InputMapper { get; }
 
   /// <summary>
   /// The prompt template to render.
@@ -57,26 +57,26 @@ public sealed class LlmStep<TOutput> : IPipelineStep
   /// Predicate to determine if this step should execute.
   /// If false, the step returns StepResult.Continue() without doing work.
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ExecutionCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ExecutionCondition { get; }
 
   /// <summary>
   /// Function to determine the flow control decision after execution.
   /// Receives the context and returns whether to continue (true) or stop (false).
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ContinuationCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ContinuationCondition { get; }
 
   public LlmStep(
     string name,
     ILlmProvider provider,
-    Func<PipelineExecutionContext, IDictionary<string, string>> inputMapper,
+    Func<ExecutionPipelineContext, IDictionary<string, string>> inputMapper,
     string promptTemplate,
     Func<string, TOutput> outputParser,
     string outputKey,
     string? model = null,
     double? temperature = null,
     int? maxTokens = null,
-    Func<PipelineExecutionContext, bool>? executionCondition = null,
-    Func<PipelineExecutionContext, bool>? continuationCondition = null)
+    Func<ExecutionPipelineContext, bool>? executionCondition = null,
+    Func<ExecutionPipelineContext, bool>? continuationCondition = null)
   {
     Name = name;
     Provider = provider;
@@ -92,7 +92,7 @@ public sealed class LlmStep<TOutput> : IPipelineStep
   }
 
   public async Task<StepResult> ExecuteAsync(
-    PipelineExecutionContext context,
+    ExecutionPipelineContext context,
     CancellationToken ct
   )
   {

@@ -102,7 +102,7 @@ public class FlowControlObservabilityTests
             () => runner.RunAsync(pipeline));
 
         // Verify execution was recorded
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         try
         {
             await runner.RunAsync(pipeline, context);
@@ -177,7 +177,7 @@ public class FlowControlObservabilityTests
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("do_work", false);  // Don't do work
 
         // Act

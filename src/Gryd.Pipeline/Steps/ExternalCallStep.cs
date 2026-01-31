@@ -14,31 +14,31 @@ public sealed class ExternalCallStep<TOutput> : IPipelineStep
   /// <summary>
   /// Function that calls the external system.
   /// </summary>
-  public Func<PipelineExecutionContext, Task<TOutput>> Call { get; }
+  public Func<ExecutionPipelineContext, Task<TOutput>> Call { get; }
 
   /// <summary>
   /// Action that stores the result in the context.
   /// </summary>
-  public Action<PipelineExecutionContext, TOutput> SaveResult { get; }
+  public Action<ExecutionPipelineContext, TOutput> SaveResult { get; }
 
   /// <summary>
   /// Predicate to determine if this step should execute.
   /// If false, the step returns StepResult.Continue() without doing work.
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ExecutionCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ExecutionCondition { get; }
 
   /// <summary>
   /// Function to determine the flow control decision after execution.
   /// Receives the context and returns whether to continue (true) or stop (false).
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ContinuationCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ContinuationCondition { get; }
 
   public ExternalCallStep(
     string name,
-    Func<PipelineExecutionContext, Task<TOutput>> call,
-    Action<PipelineExecutionContext, TOutput> saveResult,
-    Func<PipelineExecutionContext, bool>? executionCondition = null,
-    Func<PipelineExecutionContext, bool>? continuationCondition = null)
+    Func<ExecutionPipelineContext, Task<TOutput>> call,
+    Action<ExecutionPipelineContext, TOutput> saveResult,
+    Func<ExecutionPipelineContext, bool>? executionCondition = null,
+    Func<ExecutionPipelineContext, bool>? continuationCondition = null)
   {
     Name = name;
     Call = call;
@@ -48,7 +48,7 @@ public sealed class ExternalCallStep<TOutput> : IPipelineStep
   }
 
   public async Task<StepResult> ExecuteAsync(
-    PipelineExecutionContext context,
+    ExecutionPipelineContext context,
     CancellationToken ct
   )
   {

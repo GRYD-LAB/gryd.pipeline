@@ -81,7 +81,7 @@ public static class BasicPipelineExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("input_value", -5);
 
         await runner.RunAsync(pipeline, context);
@@ -165,7 +165,7 @@ public static class BasicPipelineExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("input", "  HELLO  ");
 
         await runner.RunAsync(pipeline, context);

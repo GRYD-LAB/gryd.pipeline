@@ -185,7 +185,7 @@ Generate a helpful and personalized response:",
       .With(respondStep)
       .Build();
 
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("query", "I need to return my order");
 
     await runner.RunAsync(pipeline, context);

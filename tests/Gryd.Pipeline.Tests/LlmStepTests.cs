@@ -23,7 +23,7 @@ public class LlmStepTests
       outputParser: raw => raw.ToUpper(),
       outputKey: "answer");
 
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("name", "Alice");
     context.Set("question", "What is AI?");
 
@@ -53,7 +53,7 @@ public class LlmStepTests
       outputParser: raw => int.Parse(raw),
       outputKey: "result");
 
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("query", "Solve this math problem");
 
     // Act

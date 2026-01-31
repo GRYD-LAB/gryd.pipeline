@@ -35,7 +35,7 @@ public class MiddlewareBehaviorTests
       .Build();
 
     var runner = new PipelineRunner();
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("should_execute", false);
 
     // Act
@@ -75,7 +75,7 @@ public class MiddlewareBehaviorTests
       .Build();
 
     var runner = new PipelineRunner();
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("value", -5);
 
     // Act
@@ -116,7 +116,7 @@ public class MiddlewareBehaviorTests
       .Build();
 
     var runner = new PipelineRunner();
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("initialized", false);
 
     // Act
@@ -174,7 +174,7 @@ public class MiddlewareBehaviorTests
       .Build();
 
     var runner = new PipelineRunner();
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("run_step2", false);
     context.Set("continue_after_step3", false);
 
@@ -222,12 +222,12 @@ public class MiddlewareBehaviorTests
     var runner = new PipelineRunner();
 
     // Act: Invalid token
-    var context1 = new PipelineExecutionContext();
+    var context1 = new ExecutionPipelineContext();
     context1.Set("auth_token", "invalid");
     var result1 = await runner.RunAsync(pipeline, context1);
 
     // Act: Valid token
-    var context2 = new PipelineExecutionContext();
+    var context2 = new ExecutionPipelineContext();
     context2.Set("auth_token", "valid_token");
     var result2 = await runner.RunAsync(pipeline, context2);
 
@@ -281,19 +281,19 @@ public class MiddlewareBehaviorTests
     var runner = new PipelineRunner();
 
     // Act: Premium user with high request count (should skip rate limit)
-    var premiumContext = new PipelineExecutionContext();
+    var premiumContext = new ExecutionPipelineContext();
     premiumContext.Set("is_premium", true);
     premiumContext.Set("request_count", 1000);
     var premiumResult = await runner.RunAsync(pipeline, premiumContext);
 
     // Act: Regular user over limit (should stop)
-    var overLimitContext = new PipelineExecutionContext();
+    var overLimitContext = new ExecutionPipelineContext();
     overLimitContext.Set("is_premium", false);
     overLimitContext.Set("request_count", 150);
     var overLimitResult = await runner.RunAsync(pipeline, overLimitContext);
 
     // Act: Regular user within limit (should continue)
-    var withinLimitContext = new PipelineExecutionContext();
+    var withinLimitContext = new ExecutionPipelineContext();
     withinLimitContext.Set("is_premium", false);
     withinLimitContext.Set("request_count", 50);
     var withinLimitResult = await runner.RunAsync(pipeline, withinLimitContext);

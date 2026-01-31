@@ -22,7 +22,7 @@ public static class CustomStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("value", -5);
 
         await runner.RunAsync(pipeline, context);
@@ -57,7 +57,7 @@ public static class CustomStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
 
         await runner.RunAsync(pipeline, context);
 
@@ -102,7 +102,7 @@ public static class CustomStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("should_process", true);
 
         await runner.RunAsync(pipeline, context);
@@ -117,7 +117,7 @@ public class ValidationStep : IPipelineStep
     public string Name => "ValidateInput";
 
     public Task<StepResult> ExecuteAsync(
-        PipelineExecutionContext context,
+        ExecutionPipelineContext context,
         CancellationToken cancellationToken)
     {
         var value = context.Get<int>("value");
@@ -151,7 +151,7 @@ public class RetryStep : IPipelineStep
     }
 
     public async Task<StepResult> ExecuteAsync(
-        PipelineExecutionContext context,
+        ExecutionPipelineContext context,
         CancellationToken cancellationToken)
     {
         var attempts = 0;
@@ -203,7 +203,7 @@ public class LoggingStep : IPipelineStep
     }
 
     public Task<StepResult> ExecuteAsync(
-        PipelineExecutionContext context,
+        ExecutionPipelineContext context,
         CancellationToken cancellationToken)
     {
         Console.WriteLine($"[{Name}] Logging context state:");
@@ -223,13 +223,13 @@ public class LoggingStep : IPipelineStep
 /// </summary>
 public class ConditionalExecutionStep : IPipelineStep
 {
-    private readonly Func<PipelineExecutionContext, bool> _condition;
+    private readonly Func<ExecutionPipelineContext, bool> _condition;
     private readonly IPipelineStep _stepToExecute;
 
     public string Name => $"Conditional({_stepToExecute.Name})";
 
     public ConditionalExecutionStep(
-        Func<PipelineExecutionContext, bool> condition,
+        Func<ExecutionPipelineContext, bool> condition,
         IPipelineStep stepToExecute)
     {
         _condition = condition;
@@ -237,7 +237,7 @@ public class ConditionalExecutionStep : IPipelineStep
     }
 
     public async Task<StepResult> ExecuteAsync(
-        PipelineExecutionContext context,
+        ExecutionPipelineContext context,
         CancellationToken cancellationToken)
     {
         if (_condition(context))

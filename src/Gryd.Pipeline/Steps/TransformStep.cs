@@ -14,25 +14,25 @@ public sealed class TransformStep : IPipelineStep
   /// <summary>
   /// Handler that performs transformations and enriches the context.
   /// </summary>
-  public Func<PipelineExecutionContext, Task> Handler { get; }
+  public Func<ExecutionPipelineContext, Task> Handler { get; }
 
   /// <summary>
   /// Predicate to determine if this step should execute.
   /// If false, the step returns StepResult.Continue() without doing work.
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ExecutionCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ExecutionCondition { get; }
 
   /// <summary>
   /// Function to determine the flow control decision after execution.
   /// Receives the context and returns whether to continue (true) or stop (false).
   /// </summary>
-  public Func<PipelineExecutionContext, bool> ContinuationCondition { get; }
+  public Func<ExecutionPipelineContext, bool> ContinuationCondition { get; }
 
   public TransformStep(
     string name,
-    Func<PipelineExecutionContext, Task> handler,
-    Func<PipelineExecutionContext, bool>? executionCondition = null,
-    Func<PipelineExecutionContext, bool>? continuationCondition = null)
+    Func<ExecutionPipelineContext, Task> handler,
+    Func<ExecutionPipelineContext, bool>? executionCondition = null,
+    Func<ExecutionPipelineContext, bool>? continuationCondition = null)
   {
     Name = name;
     Handler = handler;
@@ -41,7 +41,7 @@ public sealed class TransformStep : IPipelineStep
   }
 
   public async Task<StepResult> ExecuteAsync(
-    PipelineExecutionContext context,
+    ExecutionPipelineContext context,
     CancellationToken ct
   )
   {

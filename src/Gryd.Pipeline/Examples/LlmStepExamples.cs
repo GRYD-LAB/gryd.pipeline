@@ -33,7 +33,7 @@ public static class LlmStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("user_query", "What is a pipeline?");
 
         await runner.RunAsync(pipeline, context);
@@ -91,7 +91,7 @@ public static class LlmStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("raw_query", "  How do I configure the pipeline?  ");
 
         await runner.RunAsync(pipeline, context);
@@ -137,7 +137,7 @@ public static class LlmStepExamples
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("question", "What is the meaning of life?");
 
         await runner.RunAsync(pipeline, context);
@@ -202,7 +202,7 @@ Answer based on the context:",
             .Build();
 
         var runner = new PipelineRunner();
-        var context = new PipelineExecutionContext();
+        var context = new ExecutionPipelineContext();
         context.Set("query", "How do I use pipelines?");
 
         await runner.RunAsync(pipeline, context);

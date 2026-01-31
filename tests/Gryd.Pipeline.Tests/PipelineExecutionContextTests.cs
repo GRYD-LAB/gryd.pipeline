@@ -2,13 +2,13 @@
 
 using Steps;
 
-public class PipelineExecutionContextTests
+public class ExecutionPipelineContextTests
 {
   [Fact]
   public void Set_And_Get_Should_Store_And_Retrieve_Values()
   {
     // Arrange
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
 
     // Act
     context.Set("key1", "value1");
@@ -23,7 +23,7 @@ public class PipelineExecutionContextTests
   public void Has_Should_Return_True_For_Existing_Keys()
   {
     // Arrange
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
     context.Set("key1", "value");
 
     // Assert
@@ -35,7 +35,7 @@ public class PipelineExecutionContextTests
   public void Get_Should_Throw_For_Missing_Key()
   {
     // Arrange
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
 
     // Act & Assert
     Assert.Throws<KeyNotFoundException>(() => context.Get<string>("missing"));
@@ -56,7 +56,7 @@ public class TransformStepTests
         return Task.CompletedTask;
       });
 
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
 
     // Act
     var result = await step.ExecuteAsync(context, CancellationToken.None);
@@ -78,7 +78,7 @@ public class ExternalCallStepTests
       ctx => Task.FromResult(42),
       (ctx, result) => ctx.Set("external_result", result));
 
-    var context = new PipelineExecutionContext();
+    var context = new ExecutionPipelineContext();
 
     // Act
     var result = await step.ExecuteAsync(context, CancellationToken.None);
@@ -208,7 +208,7 @@ public class PipelineRunnerTests
       Name = name;
     }
 
-    public Task<StepResult> ExecuteAsync(PipelineExecutionContext context, CancellationToken ct)
+    public Task<StepResult> ExecuteAsync(ExecutionPipelineContext context, CancellationToken ct)
     {
       return Task.FromResult(StepResult.Stop());
     }

@@ -52,7 +52,7 @@ namespace Gryd.Pipeline;
 /// - The engine never infers, spreads, or transforms data automatically.
 /// - Keys and values placed here define the semantic contract between steps.
 /// </summary>
-public sealed class PipelineExecutionContext
+public sealed class ExecutionPipelineContext
 {
   /// <summary>
   /// Arbitrary data produced and consumed by pipeline steps.
