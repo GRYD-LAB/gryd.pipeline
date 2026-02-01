@@ -1,6 +1,5 @@
 namespace Gryd.Pipeline.Examples;
 
-using Steps;
 using Fakes;
 
 /// <summary>

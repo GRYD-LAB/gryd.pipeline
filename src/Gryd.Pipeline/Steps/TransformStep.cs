@@ -23,9 +23,9 @@ public abstract class TransformStep : IPipelineStep
   }
 
   /// <summary>
-  /// Performs the transformation on the execution context.
+  /// Performs the transformation on the execution ctx.
   /// Override this method to implement your transformation logic.
   /// </summary>
-  /// <param name="context">The execution context containing shared data.</param>
-  protected abstract void Execute(ExecutionPipelineContext context);
+  /// <param name="ctx">The execution ctx containing shared data.</param>
+  protected abstract void Execute(ExecutionPipelineContext ctx);
 }

@@ -19,8 +19,8 @@ public class SimpleTransformStep : TransformStep
     _action = action;
   }
 
-  protected override void Execute(ExecutionPipelineContext context)
+  protected override void Execute(ExecutionPipelineContext ctx)
   {
-    _action(context);
+    _action(ctx);
   }
 }

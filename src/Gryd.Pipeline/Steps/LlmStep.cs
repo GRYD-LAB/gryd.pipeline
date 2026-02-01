@@ -98,10 +98,10 @@ public abstract class LlmStep<TOutput> : IPipelineStep
     ?? throw new InvalidOperationException("Invalid generation output");
 
   /// <summary>
-  /// Stores the result in the execution context.
+  /// Stores the result in the execution ctx.
   /// </summary>
   protected abstract void WriteResult(
-    ExecutionPipelineContext context,
+    ExecutionPipelineContext ctx,
     TOutput result);
 
   /// <summary>

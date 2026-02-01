@@ -237,9 +237,9 @@ public static class LlmStepExamples
 
     protected override string Parse(string raw) => raw.Trim();
 
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
     {
-      context.Set("llm_response", result);
+      ctx.Set("llm_response", result);
     }
   }
 
@@ -265,9 +265,9 @@ public static class LlmStepExamples
 
     protected override string Parse(string raw) => raw.Trim().ToLower();
 
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
     {
-      context.Set("intent", result);
+      ctx.Set("intent", result);
     }
   }
 
@@ -294,9 +294,9 @@ public static class LlmStepExamples
 
     protected override string Parse(string raw) => raw.Trim();
 
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
     {
-      context.Set("final_response", result);
+      ctx.Set("final_response", result);
     }
   }
 
@@ -333,9 +333,9 @@ public static class LlmStepExamples
       };
     }
 
-    protected override void WriteResult(ExecutionPipelineContext context, ParsedResponse result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, ParsedResponse result)
     {
-      context.Set("parsed_response", result);
+      ctx.Set("parsed_response", result);
     }
   }
 
@@ -368,9 +368,9 @@ Answer based on the context:";
 
     protected override string Parse(string raw) => raw.Trim();
 
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
     {
-      context.Set("answer", result);
+      ctx.Set("answer", result);
     }
   }
 
