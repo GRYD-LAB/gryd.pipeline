@@ -9,7 +9,7 @@ using Llm;
 /// Pipeline step that invokes an LLM using a prompt template
 /// and stores its result explicitly in the execution context.
 /// </summary>
-public abstract class LlmStep<TOutput> : IPipelineStep
+public abstract class LlmStep : IPipelineStep
 {
   protected readonly JsonSerializerOptions JsonOptions;
 
@@ -68,11 +68,8 @@ public abstract class LlmStep<TOutput> : IPipelineStep
 
       var response = await Provider.GenerateAsync(request, ct);
 
-      // 4. Parse / validate
-      var parsedOutput = Parse(response.Content);
-
-      // 5. Store result (always)
-      WriteResult(context, parsedOutput);
+      // 4. Store result (always)
+      WriteResult(context, response.Content);
     }
 
     // 6. Decide whether pipeline should continue (independent of execution)
@@ -88,21 +85,11 @@ public abstract class LlmStep<TOutput> : IPipelineStep
     ExecutionPipelineContext ctx);
 
   /// <summary>
-  /// Parses the raw LLM output into the desired output type.
-  /// </summary>
-  /// <param name="raw"></param>
-  /// <returns></returns>
-  /// <exception cref="InvalidOperationException"></exception>
-  protected virtual TOutput Parse(string raw) =>
-    JsonSerializer.Deserialize<TOutput>(raw, JsonOptions)
-    ?? throw new InvalidOperationException("Invalid generation output");
-
-  /// <summary>
   /// Stores the result in the execution ctx.
   /// </summary>
   protected abstract void WriteResult(
     ExecutionPipelineContext ctx,
-    TOutput result);
+    string rawResult);
 
   /// <summary>
   /// Predicate to determine if this step should execute.

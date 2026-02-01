@@ -177,7 +177,7 @@ public class CustomerSupportPipelineExample
   }
 
   // Concrete LlmStep implementation for customer support
-  private class CustomerResponseStep : LlmStep<string>
+  private class CustomerResponseStep : LlmStep
   {
     public override string Name => "GenerateResponse";
 
@@ -204,11 +204,10 @@ Generate a helpful and personalized response:";
       };
     }
 
-    protected override string Parse(string raw) => raw.Trim();
-
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
+    protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
     {
-      context.Set("generated_response", result);
+      // Child class decides whether to parse the raw result
+      context.Set("generated_response", rawResult.Trim());
     }
   }
 

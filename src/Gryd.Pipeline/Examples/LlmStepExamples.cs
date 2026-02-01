@@ -9,15 +9,15 @@ using System.Text.Json;
 /// <summary>
 /// Examples demonstrating LlmStep usage with different providers.
 ///
-/// IMPORTANT: LlmStep&lt;T&gt; is an ABSTRACT base class. All examples in this file
+/// IMPORTANT: LlmStep is an ABSTRACT base class. All examples in this file
 /// demonstrate concrete implementations (BasicResponseStep, ClassifyIntentStep, etc.).
 ///
-/// You cannot instantiate LlmStep&lt;T&gt; directly - you must create concrete subclasses
+/// You cannot instantiate LlmStep directly - you must create concrete subclasses
 /// that implement the required abstract members:
 /// - Name (property)
 /// - PromptTemplate (property)
-/// - MapInputs(context)
-/// - WriteResult(context, result)
+/// - MapInputs(context) - reads data from context to populate prompt variables
+/// - WriteResult(context, rawResult) - receives raw LLM string, decides whether to parse, saves to context
 /// </summary>
 public static class LlmStepExamples
 {
@@ -205,17 +205,17 @@ public static class LlmStepExamples
   // ============================================================================
   // CONCRETE LlmStep IMPLEMENTATIONS
   // ============================================================================
-  // LlmStep<T> is ABSTRACT and cannot be instantiated directly.
+  // LlmStep is ABSTRACT and cannot be instantiated directly.
   // These classes show the required pattern for creating concrete LLM steps.
   // Each implementation must provide:
   //   - Name (identifies the step)
   //   - PromptTemplate (the prompt with placeholders)
   //   - MapInputs() (reads data from context)
-  //   - WriteResult() (writes data to context)
-  //   - Parse() (optional: custom response parsing)
+  //   - WriteResult() (writes data to context, receives raw string from LLM)
+  // The child class decides whether to parse the raw result before saving to context.
   // ============================================================================
 
-  private class BasicResponseStep : LlmStep<string>
+  private class BasicResponseStep : LlmStep
   {
     public override string Name => "GenerateResponse";
     protected override string PromptTemplate => "Answer this question: {query}";
@@ -235,15 +235,14 @@ public static class LlmStepExamples
       };
     }
 
-    protected override string Parse(string raw) => raw.Trim();
-
-    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string rawResult)
     {
-      ctx.Set("llm_response", result);
+      // Child class decides whether to parse or not
+      ctx.Set("llm_response", rawResult.Trim());
     }
   }
 
-  private class ClassifyIntentStep : LlmStep<string>
+  private class ClassifyIntentStep : LlmStep
   {
     public override string Name => "ClassifyIntent";
     protected override string PromptTemplate => "Classify the intent of: {query}";
@@ -263,15 +262,14 @@ public static class LlmStepExamples
       };
     }
 
-    protected override string Parse(string raw) => raw.Trim().ToLower();
-
-    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string rawResult)
     {
-      ctx.Set("intent", result);
+      // Parse and normalize the intent before saving
+      ctx.Set("intent", rawResult.Trim().ToLower());
     }
   }
 
-  private class GenerateResponseStep : LlmStep<string>
+  private class GenerateResponseStep : LlmStep
   {
     public override string Name => "GenerateResponse";
     protected override string PromptTemplate => "Intent: {intent}\nQuery: {query}\n\nProvide a response:";
@@ -292,15 +290,13 @@ public static class LlmStepExamples
       };
     }
 
-    protected override string Parse(string raw) => raw.Trim();
-
-    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string rawResult)
     {
-      ctx.Set("final_response", result);
+      ctx.Set("final_response", rawResult.Trim());
     }
   }
 
-  private class ExtractStructuredDataStep : LlmStep<ParsedResponse>
+  private class ExtractStructuredDataStep : LlmStep
   {
     public override string Name => "ExtractStructuredData";
     protected override string PromptTemplate => "Question: {question}";
@@ -320,26 +316,24 @@ public static class LlmStepExamples
       };
     }
 
-    protected override ParsedResponse Parse(string raw)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string rawResult)
     {
-      var lines = raw.Split('\n');
+      // Parse the raw result into structured data
+      var lines = rawResult.Split('\n');
       var answer = lines.FirstOrDefault(l => l.StartsWith("Answer:"))?.Replace("Answer:", "").Trim();
       var explanation = lines.FirstOrDefault(l => l.StartsWith("Explanation:"))?.Replace("Explanation:", "").Trim();
 
-      return new ParsedResponse
+      var parsed = new ParsedResponse
       {
         Answer = answer ?? string.Empty,
         Explanation = explanation ?? string.Empty
       };
-    }
 
-    protected override void WriteResult(ExecutionPipelineContext ctx, ParsedResponse result)
-    {
-      ctx.Set("parsed_response", result);
+      ctx.Set("parsed_response", parsed);
     }
   }
 
-  private class GenerateAnswerStep : LlmStep<string>
+  private class GenerateAnswerStep : LlmStep
   {
     public override string Name => "GenerateAnswer";
 
@@ -362,15 +356,13 @@ Answer based on the context:";
       return new Dictionary<string, string>
       {
         ["query"] = ctx.Get<string>("query"),
-        ["ctx"] = ctx.Get<string>("document_context")
+        ["context"] = ctx.Get<string>("document_context")
       };
     }
 
-    protected override string Parse(string raw) => raw.Trim();
-
-    protected override void WriteResult(ExecutionPipelineContext ctx, string result)
+    protected override void WriteResult(ExecutionPipelineContext ctx, string rawResult)
     {
-      ctx.Set("answer", result);
+      ctx.Set("answer", rawResult.Trim());
     }
   }
 

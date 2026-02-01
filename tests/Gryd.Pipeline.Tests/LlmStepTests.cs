@@ -114,7 +114,7 @@ public class LlmStepTests
   }
 
   // Test helper classes
-  private class TestLlmStep : LlmStep<string>
+  private class TestLlmStep : LlmStep
   {
     private readonly Func<ExecutionPipelineContext, IDictionary<string, string>> _inputMapper;
     private readonly string _promptTemplate;
@@ -142,13 +142,15 @@ public class LlmStepTests
     protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
       => _inputMapper(context);
 
-    protected override string Parse(string raw) => _outputParser(raw);
-
-    protected override void WriteResult(ExecutionPipelineContext context, string result)
-      => context.Set(_outputKey, result);
+    protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
+    {
+      // Child class decides whether to parse the raw result
+      var parsed = _outputParser(rawResult);
+      context.Set(_outputKey, parsed);
+    }
   }
 
-  private class TestLlmStepInt : LlmStep<int>
+  private class TestLlmStepInt : LlmStep
   {
     private readonly Func<ExecutionPipelineContext, IDictionary<string, string>> _inputMapper;
     private readonly string _promptTemplate;
@@ -176,10 +178,12 @@ public class LlmStepTests
     protected override IDictionary<string, string> MapInputs(ExecutionPipelineContext context)
       => _inputMapper(context);
 
-    protected override int Parse(string raw) => _outputParser(raw);
-
-    protected override void WriteResult(ExecutionPipelineContext context, int result)
-      => context.Set(_outputKey, result);
+    protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
+    {
+      // Child class decides whether to parse the raw result (e.g., to int)
+      var parsed = _outputParser(rawResult);
+      context.Set(_outputKey, parsed);
+    }
   }
 
   private record TestLlmStepOptions : LlmStepOptions;

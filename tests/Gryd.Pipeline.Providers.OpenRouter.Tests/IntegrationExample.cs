@@ -256,7 +256,7 @@ internal class FakeHttpMessageHandler : HttpMessageHandler
 /// <summary>
 /// Concrete LlmStep implementations for OpenRouter tests
 /// </summary>
-internal class OpenRouterResponseStep : Steps.LlmStep<string>
+internal class OpenRouterResponseStep : Steps.LlmStep
 {
   public override string Name => "GenerateResponse";
 
@@ -283,15 +283,13 @@ Generate a helpful and personalized response:";
     };
   }
 
-  protected override string Parse(string raw) => raw.Trim();
-
-  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
   {
-    context.Set("llm_response", result);
+    context.Set("llm_response", rawResult.Trim());
   }
 }
 
-internal class ClassifyIntentOpenRouterStep : Steps.LlmStep<string>
+internal class ClassifyIntentOpenRouterStep : Steps.LlmStep
 {
   public override string Name => "ClassifyIntent";
   protected override string PromptTemplate => "Classify the intent of: {query}";
@@ -311,15 +309,13 @@ internal class ClassifyIntentOpenRouterStep : Steps.LlmStep<string>
     };
   }
 
-  protected override string Parse(string raw) => raw.Trim();
-
-  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
   {
-    context.Set("intent", result);
+    context.Set("intent", rawResult.Trim());
   }
 }
 
-internal class GenerateResponseOpenRouterStep : Steps.LlmStep<string>
+internal class GenerateResponseOpenRouterStep : Steps.LlmStep
 {
   public override string Name => "GenerateResponse";
   protected override string PromptTemplate => "Intent: {intent}\nQuery: {query}\n\nGenerate response:";
@@ -340,11 +336,10 @@ internal class GenerateResponseOpenRouterStep : Steps.LlmStep<string>
     };
   }
 
-  protected override string Parse(string raw) => raw.Trim();
-
-  protected override void WriteResult(ExecutionPipelineContext context, string result)
+  protected override void WriteResult(ExecutionPipelineContext context, string rawResult)
   {
-    context.Set("final_response", result);
+    // Child class decides whether to parse the raw result
+    context.Set("final_response", rawResult.Trim());
   }
 }
 
