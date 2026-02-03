@@ -5,7 +5,25 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>Gryd.Pipeline.Providers.OpenRouter</PackageId>
+    <Description>OpenRouter LLM provider for Gryd.Pipeline. A transport adapter that bridges Gryd.Pipeline and the OpenRouter API for invoking LLM models in pipeline workflows.</Description>
+    <Authors>Gryd</Authors>
+    <RepositoryUrl>https://github.com/gcamara/gryd.pipeline</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>pipeline;llm;openrouter;ai;gryd-pipeline</PackageTags>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Generate package on build -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Gryd.Pipeline\Gryd.Pipeline.csproj"/>

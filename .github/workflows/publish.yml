@@ -1,0 +1,71 @@
+name: Publish to NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        # Extract version from tag (v1.2.3 -> 1.2.3)
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Pack Gryd.Pipeline
+      run: |
+        dotnet pack src/Gryd.Pipeline/Gryd.Pipeline.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./artifacts \
+          /p:PackageVersion=${{ steps.version.outputs.VERSION }} \
+          /p:Version=${{ steps.version.outputs.VERSION }} \
+          /p:AssemblyVersion=${{ steps.version.outputs.VERSION }}
+
+    - name: Pack Gryd.Pipeline.Providers.OpenRouter
+      run: |
+        dotnet pack src/Gryd.Pipeline.Providers.OpenRouter/Gryd.Pipeline.Providers.OpenRouter.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./artifacts \
+          /p:PackageVersion=${{ steps.version.outputs.VERSION }} \
+          /p:Version=${{ steps.version.outputs.VERSION }} \
+          /p:AssemblyVersion=${{ steps.version.outputs.VERSION }}
+
+    - name: List artifacts
+      run: ls -lh ./artifacts
+
+    - name: Publish to NuGet
+      run: |
+        dotnet nuget push "./artifacts/*.nupkg" \
+          --source https://api.nuget.org/v3/index.json \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --skip-duplicate
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
